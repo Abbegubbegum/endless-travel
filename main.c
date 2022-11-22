@@ -1,6 +1,8 @@
 #include "raylib.h"
 #include <stdio.h>
 #include <stdbool.h>
+#include <stdlib.h>
+#include <time.h>
 
 typedef struct
 {
@@ -40,6 +42,8 @@ const int MAP_SIZE = MAP_COLS * MAP_ROWS;
 tile_t *map_tiles[MAP_SIZE] = {0};
 
 tileset_t tileset = {0};
+
+bool algorithm_finished = false;
 
 int coord2index(int x, int y)
 {
@@ -85,8 +89,56 @@ void init_tileset(void)
             .top = 0,
         },
     };
+    tileset.tiles[3] = (tile_t){
+        .texture = LoadTexture("img/V_LINE.png"),
+        .side_rules = {
+            .top = 1,
+            .bottom = 1,
+            .left = 0,
+            .right = 0,
+        },
+    };
+    tileset.tiles[4] = (tile_t){
+        .texture = LoadTexture("img/LEFT_T.png"),
+        .side_rules = {
+            .left = 1,
+            .top = 1,
+            .bottom = 1,
+            .right = 0,
+        },
+    };
 
-    tileset.tile_count = 3;
+    tileset.tiles[5] = (tile_t){
+        .texture = LoadTexture("img/TOP_T.png"),
+        .side_rules = {
+            .left = 1,
+            .top = 1,
+            .right = 1,
+            .bottom = 0,
+        },
+    };
+
+    tileset.tiles[6] = (tile_t){
+        .texture = LoadTexture("img/TURN_LB.png"),
+        .side_rules = {
+            .bottom = 1,
+            .left = 1,
+            .top = 0,
+            .right = 0,
+        },
+    };
+
+    tileset.tiles[7] = (tile_t){
+        .texture = LoadTexture("img/TURN_TR.png"),
+        .side_rules = {
+            .top = 1,
+            .right = 1,
+            .left = 0,
+            .bottom = 0,
+        },
+    };
+
+    tileset.tile_count = 8;
 }
 
 void draw_tiles(void)
@@ -175,7 +227,7 @@ void place_next_tile()
             if (map_tiles[coord2index(x, y)] == NULL)
             {
                 entropy_map[coord2index(x, y)] = calc_entropy(x, y);
-                if (entropy_map[coord2index(x, y)].count < lowest_entropy)
+                if (entropy_map[coord2index(x, y)].count < lowest_entropy && entropy_map[coord2index(x, y)].count != 0)
                 {
                     lowest_entropy = entropy_map[coord2index(x, y)].count;
                     lowest_entropy_pos = (Vector2){.x = x, .y = y};
@@ -183,22 +235,55 @@ void place_next_tile()
             }
         }
     }
+
+    if (lowest_entropy == __INT32_MAX__)
+    {
+        algorithm_finished = true;
+        return;
+    }
+
     printf("%d | %0.f, %0.f\n", lowest_entropy, lowest_entropy_pos.x, lowest_entropy_pos.y);
+
+    entropy_t entropy_to_collapse = entropy_map[coord2index(lowest_entropy_pos.x, lowest_entropy_pos.y)];
+
+    int tile_index = rand() % entropy_to_collapse.count;
+
+    for (int i = 0; i < tileset.tile_count; i++)
+    {
+        if (entropy_to_collapse.options[i])
+        {
+            if (tile_index == 0)
+            {
+                map_tiles[coord2index(lowest_entropy_pos.x, lowest_entropy_pos.y)] = &tileset.tiles[i];
+                break;
+            }
+            else
+            {
+                tile_index--;
+            }
+        }
+    }
 }
 
 int main(void)
 {
+    srand(time(NULL));
+
     InitWindow(WIDTH, HEIGHT, "WFC");
     SetTargetFPS(60);
 
     init_tileset();
 
     map_tiles[coord2index(4, 4)] = &tileset.tiles[0];
-    place_next_tile();
 
     while (!WindowShouldClose())
     {
         // UPDATE ------------------------------
+        if (!algorithm_finished)
+        {
+            place_next_tile();
+        }
+
         // DRAW --------------------------------
         BeginDrawing();
         ClearBackground(BEIGE);
