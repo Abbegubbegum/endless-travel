@@ -228,6 +228,35 @@ bool tile_is_placable(tile_t tile, int x, int y)
     return true;
 }
 
+bool tile_is_connected(int x, int y)
+{
+    // CHECK TOP TILE
+    if (map_tiles[coord2index(x, y - 1)] != NULL && map_tiles[coord2index(x, y - 1)]->side_rules.bottom == 1)
+    {
+        return true;
+    }
+
+    // CHECK BELOW TILE
+    if (map_tiles[coord2index(x, y + 1)] != NULL && map_tiles[coord2index(x, y + 1)]->side_rules.top == 1)
+    {
+        return true;
+    }
+
+    // CHECK LEFT TILE
+    if (map_tiles[coord2index(x - 1, y)] != NULL && map_tiles[coord2index(x - 1, y)]->side_rules.right == 1)
+    {
+        return true;
+    }
+
+    // CHECK RIGHT TILE
+    if (map_tiles[coord2index(x + 1, y)] != NULL && map_tiles[coord2index(x + 1, y)]->side_rules.left == 1)
+    {
+        return true;
+    }
+
+    return false;
+}
+
 entropy_t calc_entropy(x, y)
 {
     entropy_t entropy = {0};
@@ -295,6 +324,74 @@ void place_next_tile()
     }
 }
 
+void place_next_connected_tile(void)
+{
+    entropy_t entropy_to_collapse = {
+        .count = __INT32_MAX__,
+    };
+    Vector2 lowest_entropy_pos = {0};
+
+    for (int y = 1; y < MAP_ROWS - 1; y++)
+    {
+        for (int x = 1; x < MAP_COLS - 1; x++)
+        {
+            // IF IT IS NOT ALREADY COLLAPSED AND IS CONNECTED TO THE MAIN PATH
+            if (map_tiles[coord2index(x, y)] == NULL && tile_is_connected(x, y))
+            {
+                entropy_t entropy = calc_entropy(x, y);
+                if (entropy.count < entropy_to_collapse.count && entropy.count != 0)
+                {
+                    entropy_to_collapse = entropy;
+                    lowest_entropy_pos = (Vector2){.x = x, .y = y};
+                }
+            }
+        }
+    }
+
+    if (entropy_to_collapse.count == __INT32_MAX__)
+    {
+        algorithm_finished = true;
+        return;
+    }
+
+    printf("%d | %0.f, %0.f\n", entropy_to_collapse.count, lowest_entropy_pos.x, lowest_entropy_pos.y);
+
+    int tile_index = rand() % entropy_to_collapse.count;
+
+    for (int i = 0; i < tileset.tile_count; i++)
+    {
+        if (entropy_to_collapse.options[i])
+        {
+            if (tile_index == 0)
+            {
+                map_tiles[coord2index(lowest_entropy_pos.x, lowest_entropy_pos.y)] = &tileset.tiles[i];
+                break;
+            }
+            else
+            {
+                tile_index--;
+            }
+        }
+    }
+}
+
+void generate_new_map()
+{
+    algorithm_finished = false;
+
+    for (int i = 0; i < MAP_SIZE; i++)
+    {
+        map_tiles[i] = NULL;
+    }
+
+    map_tiles[coord2index(MAP_COLS / 2, MAP_ROWS / 2)] = &tileset.tiles[0];
+
+    while (!algorithm_finished)
+    {
+        place_next_connected_tile();
+    }
+}
+
 int main(void)
 {
     srand(time(NULL));
@@ -304,7 +401,7 @@ int main(void)
 
     init_tileset();
 
-    map_tiles[coord2index(4, 4)] = &tileset.tiles[0];
+    map_tiles[coord2index(MAP_COLS / 2, MAP_ROWS / 2)] = &tileset.tiles[0];
 
     clock_t start;
     clock_t end;
@@ -314,19 +411,29 @@ int main(void)
         // UPDATE ------------------------------
         if (!algorithm_finished)
         {
-            start = clock();
-            while (!algorithm_finished)
-            {
-                place_next_tile();
-            }
-            end = clock();
-            printf("%f\n", ((double)end - start) / 10000000);
+            place_next_connected_tile();
+        }
+
+        // if (!algorithm_finished)
+        // {
+        //     start = clock();
+        //     while (!algorithm_finished)
+        //     {
+        //         place_next_tile();
+        //     }
+        //     end = clock();
+        //     printf("%f\n", ((double)end - start) / 10000000);
+        // }
+
+        if (IsKeyPressed(KEY_SPACE))
+        {
+            generate_new_map();
         }
 
         // DRAW --------------------------------
         BeginDrawing();
-        ClearBackground(BEIGE);
-        // DrawFPS(0, 0);
+        ClearBackground(WHITE);
+        DrawFPS(0, 0);
         draw_tiles();
         EndDrawing();
     }
