@@ -30,8 +30,8 @@ typedef struct
     int count;
 } entropy_t;
 
-const int WIDTH = 640;
-const int HEIGHT = 640;
+const int WIDTH = 1280;
+const int HEIGHT = 1280;
 
 const int TILE_SIZE = 64;
 
@@ -138,7 +138,37 @@ void init_tileset(void)
         },
     };
 
-    tileset.tile_count = 8;
+    tileset.tiles[8] = (tile_t){
+        .texture = LoadTexture("img/R_STOP.png"),
+        .side_rules = {
+            .right = 1,
+            .left = 0,
+            .bottom = 0,
+            .top = 0,
+        },
+    };
+
+    tileset.tiles[9] = (tile_t){
+        .texture = LoadTexture("img/B_STOP.png"),
+        .side_rules = {
+            .bottom = 1,
+            .left = 0,
+            .right = 0,
+            .top = 0,
+        },
+    };
+
+    tileset.tiles[10] = (tile_t){
+        .texture = LoadTexture("img/TURN_RB.png"),
+        .side_rules = {
+            .bottom = 1,
+            .right = 1,
+            .top = 0,
+            .left = 0,
+        },
+    };
+
+    tileset.tile_count = 11;
 }
 
 void draw_tiles(void)
@@ -276,18 +306,27 @@ int main(void)
 
     map_tiles[coord2index(4, 4)] = &tileset.tiles[0];
 
+    clock_t start;
+    clock_t end;
+
     while (!WindowShouldClose())
     {
         // UPDATE ------------------------------
         if (!algorithm_finished)
         {
-            place_next_tile();
+            start = clock();
+            while (!algorithm_finished)
+            {
+                place_next_tile();
+            }
+            end = clock();
+            printf("%f\n", ((double)end - start) / 10000000);
         }
 
         // DRAW --------------------------------
         BeginDrawing();
         ClearBackground(BEIGE);
-        DrawFPS(0, 0);
+        // DrawFPS(0, 0);
         draw_tiles();
         EndDrawing();
     }
