@@ -26,7 +26,10 @@ typedef struct
 
 typedef struct
 {
-    bool options[16];
+    tile_t *road_options[16];
+    int road_count;
+    tile_t *house_options[16];
+    int house_count;
     int count;
 } entropy_t;
 
@@ -41,9 +44,14 @@ const int MAP_SIZE = MAP_COLS * MAP_ROWS;
 
 tile_t *map_tiles[MAP_SIZE] = {0};
 
-tileset_t tileset = {0};
+tileset_t road_tileset = {0};
+tileset_t house_tileset = {0};
 
 bool algorithm_finished = false;
+
+const int ROAD_PERCENT_BASE = 90;
+int road_percent = ROAD_PERCENT_BASE;
+const int ROAD_PERCENT_REDUCE_RATE = 1;
 
 int coord2index(int x, int y)
 {
@@ -67,11 +75,11 @@ Vector2 coord2screen(int x, int y)
 
 void init_tileset(void)
 {
-    tileset.tiles[0] = (tile_t){
+    road_tileset.tiles[0] = (tile_t){
         .texture = LoadTexture("img/CROSS.png"),
         .side_rules = {1, 1, 1, 1},
     };
-    tileset.tiles[1] = (tile_t){
+    road_tileset.tiles[1] = (tile_t){
         .texture = LoadTexture("img/H_LINE.png"),
         .side_rules = {
             .left = 1,
@@ -80,16 +88,7 @@ void init_tileset(void)
             .top = 0,
         },
     };
-    tileset.tiles[2] = (tile_t){
-        .texture = LoadTexture("img/L_STOP.png"),
-        .side_rules = {
-            .left = 1,
-            .right = 0,
-            .bottom = 0,
-            .top = 0,
-        },
-    };
-    tileset.tiles[3] = (tile_t){
+    road_tileset.tiles[2] = (tile_t){
         .texture = LoadTexture("img/V_LINE.png"),
         .side_rules = {
             .top = 1,
@@ -98,7 +97,7 @@ void init_tileset(void)
             .right = 0,
         },
     };
-    tileset.tiles[4] = (tile_t){
+    road_tileset.tiles[3] = (tile_t){
         .texture = LoadTexture("img/LEFT_T.png"),
         .side_rules = {
             .left = 1,
@@ -108,7 +107,7 @@ void init_tileset(void)
         },
     };
 
-    tileset.tiles[5] = (tile_t){
+    road_tileset.tiles[4] = (tile_t){
         .texture = LoadTexture("img/TOP_T.png"),
         .side_rules = {
             .left = 1,
@@ -118,7 +117,7 @@ void init_tileset(void)
         },
     };
 
-    tileset.tiles[6] = (tile_t){
+    road_tileset.tiles[5] = (tile_t){
         .texture = LoadTexture("img/TURN_LB.png"),
         .side_rules = {
             .bottom = 1,
@@ -128,7 +127,7 @@ void init_tileset(void)
         },
     };
 
-    tileset.tiles[7] = (tile_t){
+    road_tileset.tiles[6] = (tile_t){
         .texture = LoadTexture("img/TURN_TR.png"),
         .side_rules = {
             .top = 1,
@@ -138,27 +137,7 @@ void init_tileset(void)
         },
     };
 
-    tileset.tiles[8] = (tile_t){
-        .texture = LoadTexture("img/R_STOP.png"),
-        .side_rules = {
-            .right = 1,
-            .left = 0,
-            .bottom = 0,
-            .top = 0,
-        },
-    };
-
-    tileset.tiles[9] = (tile_t){
-        .texture = LoadTexture("img/B_STOP.png"),
-        .side_rules = {
-            .bottom = 1,
-            .left = 0,
-            .right = 0,
-            .top = 0,
-        },
-    };
-
-    tileset.tiles[10] = (tile_t){
+    road_tileset.tiles[7] = (tile_t){
         .texture = LoadTexture("img/TURN_RB.png"),
         .side_rules = {
             .bottom = 1,
@@ -168,7 +147,69 @@ void init_tileset(void)
         },
     };
 
-    tileset.tile_count = 11;
+    road_tileset.tile_count = 8;
+
+    house_tileset.tiles[0] = (tile_t){
+        .texture = LoadTexture("img/L_STOP.png"),
+        .side_rules = {
+            .left = 1,
+            .right = 0,
+            .bottom = 0,
+            .top = 0,
+        },
+    };
+
+    house_tileset.tiles[1] = (tile_t){
+        .texture = LoadTexture("img/R_STOP.png"),
+        .side_rules = {
+            .right = 1,
+            .left = 0,
+            .bottom = 0,
+            .top = 0,
+        },
+    };
+
+    house_tileset.tiles[2] = (tile_t){
+        .texture = LoadTexture("img/B_STOP.png"),
+        .side_rules = {
+            .bottom = 1,
+            .left = 0,
+            .right = 0,
+            .top = 0,
+        },
+    };
+
+    house_tileset.tiles[3] = (tile_t){
+        .texture = LoadTexture("img/T_STOP.png"),
+        .side_rules = {
+            .top = 1,
+            .bottom = 0,
+            .left = 0,
+            .right = 0,
+        },
+    };
+
+    house_tileset.tile_count = 4;
+
+    // road_tileset.tiles[11] = (tile_t){
+    //     .texture = LoadTexture("img/H_B2G.png"),
+    //     .side_rules = {
+    //         .left = 1,
+    //         .right = 2,
+    //         .top = 0,
+    //         .bottom = 0,
+    //     },
+    // };
+
+    // road_tileset.tiles[12] = (tile_t){
+    //     .texture = LoadTexture("img/L_STOP_G.png"),
+    //     .side_rules = {
+    //         .left = 2,
+    //         .top = 0,
+    //         .bottom = 0,
+    //         .right = 0,
+    //     },
+    // };
 }
 
 void draw_tiles(void)
@@ -231,25 +272,25 @@ bool tile_is_placable(tile_t tile, int x, int y)
 bool tile_is_connected(int x, int y)
 {
     // CHECK TOP TILE
-    if (map_tiles[coord2index(x, y - 1)] != NULL && map_tiles[coord2index(x, y - 1)]->side_rules.bottom == 1)
+    if (map_tiles[coord2index(x, y - 1)] != NULL && map_tiles[coord2index(x, y - 1)]->side_rules.bottom != 0)
     {
         return true;
     }
 
     // CHECK BELOW TILE
-    if (map_tiles[coord2index(x, y + 1)] != NULL && map_tiles[coord2index(x, y + 1)]->side_rules.top == 1)
+    if (map_tiles[coord2index(x, y + 1)] != NULL && map_tiles[coord2index(x, y + 1)]->side_rules.top != 0)
     {
         return true;
     }
 
     // CHECK LEFT TILE
-    if (map_tiles[coord2index(x - 1, y)] != NULL && map_tiles[coord2index(x - 1, y)]->side_rules.right == 1)
+    if (map_tiles[coord2index(x - 1, y)] != NULL && map_tiles[coord2index(x - 1, y)]->side_rules.right != 0)
     {
         return true;
     }
 
     // CHECK RIGHT TILE
-    if (map_tiles[coord2index(x + 1, y)] != NULL && map_tiles[coord2index(x + 1, y)]->side_rules.left == 1)
+    if (map_tiles[coord2index(x + 1, y)] != NULL && map_tiles[coord2index(x + 1, y)]->side_rules.left != 0)
     {
         return true;
     }
@@ -260,18 +301,45 @@ bool tile_is_connected(int x, int y)
 entropy_t calc_entropy(x, y)
 {
     entropy_t entropy = {0};
-    for (int i = 0; i < tileset.tile_count; i++)
+
+    for (int i = 0; i < road_tileset.tile_count; i++)
     {
-        if (tile_is_placable(tileset.tiles[i], x, y))
+        if (tile_is_placable(road_tileset.tiles[i], x, y))
         {
+            entropy.road_options[entropy.road_count] = &road_tileset.tiles[i];
+            entropy.road_count++;
             entropy.count++;
-            entropy.options[i] = true;
         }
     }
+
+    for (int i = 0; i < house_tileset.tile_count; i++)
+    {
+        if (tile_is_placable(house_tileset.tiles[i], x, y))
+        {
+            entropy.house_options[entropy.house_count] = &house_tileset.tiles[i];
+            entropy.house_count++;
+            entropy.count++;
+        }
+    }
+
     return entropy;
 }
 
-void place_next_tile()
+void place_road_tile(entropy_t entropy, Vector2 pos)
+{
+    int tile_index = rand() % entropy.road_count;
+
+    map_tiles[coord2index(pos.x, pos.y)] = entropy.road_options[tile_index];
+}
+
+void place_house_tile(entropy_t entropy, Vector2 pos)
+{
+    int tile_index = rand() % entropy.house_count;
+
+    map_tiles[coord2index(pos.x, pos.y)] = entropy.house_options[tile_index];
+}
+
+void place_next_tile(void)
 {
     entropy_t entropy_map[MAP_SIZE] = {0};
 
@@ -307,13 +375,13 @@ void place_next_tile()
 
     int tile_index = rand() % entropy_to_collapse.count;
 
-    for (int i = 0; i < tileset.tile_count; i++)
+    for (int i = 0; i < road_tileset.tile_count; i++)
     {
-        if (entropy_to_collapse.options[i])
+        if (entropy_to_collapse.road_options[i])
         {
             if (tile_index == 0)
             {
-                map_tiles[coord2index(lowest_entropy_pos.x, lowest_entropy_pos.y)] = &tileset.tiles[i];
+                map_tiles[coord2index(lowest_entropy_pos.x, lowest_entropy_pos.y)] = &road_tileset.tiles[i];
                 break;
             }
             else
@@ -356,35 +424,42 @@ void place_next_connected_tile(void)
 
     printf("%d | %0.f, %0.f\n", entropy_to_collapse.count, lowest_entropy_pos.x, lowest_entropy_pos.y);
 
-    int tile_index = rand() % entropy_to_collapse.count;
-
-    for (int i = 0; i < tileset.tile_count; i++)
+    if (entropy_to_collapse.house_count == 0)
     {
-        if (entropy_to_collapse.options[i])
+        place_road_tile(entropy_to_collapse, lowest_entropy_pos);
+    }
+    else if (entropy_to_collapse.road_count == 0)
+    {
+        place_house_tile(entropy_to_collapse, lowest_entropy_pos);
+    }
+    else
+    {
+        if ((rand() % 100) < road_percent)
         {
-            if (tile_index == 0)
-            {
-                map_tiles[coord2index(lowest_entropy_pos.x, lowest_entropy_pos.y)] = &tileset.tiles[i];
-                break;
-            }
-            else
-            {
-                tile_index--;
-            }
+            printf("road\n");
+            place_road_tile(entropy_to_collapse, lowest_entropy_pos);
+        }
+        else
+        {
+            printf("house\n");
+            place_house_tile(entropy_to_collapse, lowest_entropy_pos);
         }
     }
+
+    road_percent -= ROAD_PERCENT_REDUCE_RATE;
 }
 
 void generate_new_map()
 {
     algorithm_finished = false;
+    road_percent = ROAD_PERCENT_BASE;
 
     for (int i = 0; i < MAP_SIZE; i++)
     {
         map_tiles[i] = NULL;
     }
 
-    map_tiles[coord2index(MAP_COLS / 2, MAP_ROWS / 2)] = &tileset.tiles[0];
+    map_tiles[coord2index(MAP_COLS / 2, MAP_ROWS / 2)] = &road_tileset.tiles[0];
 
     while (!algorithm_finished)
     {
@@ -401,10 +476,7 @@ int main(void)
 
     init_tileset();
 
-    map_tiles[coord2index(MAP_COLS / 2, MAP_ROWS / 2)] = &tileset.tiles[0];
-
-    clock_t start;
-    clock_t end;
+    map_tiles[coord2index(MAP_COLS / 2, MAP_ROWS / 2)] = &road_tileset.tiles[0];
 
     while (!WindowShouldClose())
     {
@@ -416,12 +488,12 @@ int main(void)
 
         // if (!algorithm_finished)
         // {
-        //     start = clock();
+        //     clock_t start = clock();
         //     while (!algorithm_finished)
         //     {
         //         place_next_tile();
         //     }
-        //     end = clock();
+        //     clock_t end = clock();
         //     printf("%f\n", ((double)end - start) / 10000000);
         // }
 
@@ -432,7 +504,7 @@ int main(void)
 
         // DRAW --------------------------------
         BeginDrawing();
-        ClearBackground(WHITE);
+        ClearBackground(BEIGE);
         DrawFPS(0, 0);
         draw_tiles();
         EndDrawing();
