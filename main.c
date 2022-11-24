@@ -49,9 +49,13 @@ tileset_t house_tileset = {0};
 
 bool algorithm_finished = false;
 
-const int ROAD_PERCENT_BASE = 90;
+const int ROAD_PERCENT_BASE = 50;
+const int ROAD_PERCENT_CHANGE_RATE = 30;
 int road_percent = ROAD_PERCENT_BASE;
-const int ROAD_PERCENT_REDUCE_RATE = 1;
+
+const int MIN_HOUSES = 3;
+const int MAX_HOUSES = 10;
+int house_count = 0;
 
 int coord2index(int x, int y)
 {
@@ -147,7 +151,37 @@ void init_tileset(void)
         },
     };
 
-    road_tileset.tile_count = 8;
+    road_tileset.tiles[8] = (tile_t){
+        .texture = LoadTexture("img/BOTTOM_T.png"),
+        .side_rules = {
+            .bottom = 1,
+            .left = 1,
+            .right = 1,
+            .top = 0,
+        },
+    };
+
+    road_tileset.tiles[9] = (tile_t){
+        .texture = LoadTexture("img/RIGHT_T.png"),
+        .side_rules = {
+            .bottom = 1,
+            .right = 1,
+            .top = 1,
+            .left = 0,
+        },
+    };
+
+    road_tileset.tiles[10] = (tile_t){
+        .texture = LoadTexture("img/TURN_TL.png"),
+        .side_rules = {
+            .top = 1,
+            .left = 1,
+            .bottom = 0,
+            .right = 0,
+        },
+    };
+
+    road_tileset.tile_count = 11;
 
     house_tileset.tiles[0] = (tile_t){
         .texture = LoadTexture("img/L_STOP.png"),
@@ -337,6 +371,7 @@ void place_house_tile(entropy_t entropy, Vector2 pos)
     int tile_index = rand() % entropy.house_count;
 
     map_tiles[coord2index(pos.x, pos.y)] = entropy.house_options[tile_index];
+    house_count++;
 }
 
 void place_next_tile(void)
@@ -423,14 +458,17 @@ void place_next_connected_tile(void)
     }
 
     printf("%d | %0.f, %0.f\n", entropy_to_collapse.count, lowest_entropy_pos.x, lowest_entropy_pos.y);
+    printf("road percent: %d%% \n", road_percent);
 
     if (entropy_to_collapse.house_count == 0)
     {
         place_road_tile(entropy_to_collapse, lowest_entropy_pos);
+        road_percent -= ROAD_PERCENT_CHANGE_RATE;
     }
     else if (entropy_to_collapse.road_count == 0)
     {
         place_house_tile(entropy_to_collapse, lowest_entropy_pos);
+        road_percent += ROAD_PERCENT_CHANGE_RATE;
     }
     else
     {
@@ -438,21 +476,24 @@ void place_next_connected_tile(void)
         {
             printf("road\n");
             place_road_tile(entropy_to_collapse, lowest_entropy_pos);
+            road_percent -= ROAD_PERCENT_CHANGE_RATE;
         }
         else
         {
             printf("house\n");
             place_house_tile(entropy_to_collapse, lowest_entropy_pos);
+            road_percent += ROAD_PERCENT_CHANGE_RATE;
         }
     }
 
-    road_percent -= ROAD_PERCENT_REDUCE_RATE;
+    // road_percent -= ROAD_PERCENT_CHANGE_RATE;
 }
 
 void generate_new_map()
 {
     algorithm_finished = false;
     road_percent = ROAD_PERCENT_BASE;
+    house_count = 0;
 
     for (int i = 0; i < MAP_SIZE; i++)
     {
@@ -464,6 +505,11 @@ void generate_new_map()
     while (!algorithm_finished)
     {
         place_next_connected_tile();
+    }
+
+    if (house_count < MIN_HOUSES || house_count > MAX_HOUSES)
+    {
+        generate_new_map();
     }
 }
 
