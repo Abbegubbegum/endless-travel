@@ -55,6 +55,12 @@ typedef struct
     special_tile_e special_tile;
 } map_tile_t;
 
+typedef struct
+{
+    int index;
+    int path_length;
+} frontier_data_t;
+
 const int WIDTH = 1280;
 const int HEIGHT = 1280;
 
@@ -82,8 +88,10 @@ int house_count = 0;
 Vector2 start_pos = (Vector2){.x = (int)MAP_COLS / 2, .y = (int)MAP_ROWS / 2};
 
 // BFS VARIABLES
-int frontier[MAP_SIZE] = {0};
+frontier_data_t frontier[MAP_SIZE] = {0};
+int frontier_count = 0;
 int reached[MAP_SIZE] = {0};
+int reached_count = 0;
 
 // CONVERSION FUNCTIONS //////////////////////////////////////////////////////////
 int coord2index(int x, int y)
@@ -107,9 +115,121 @@ Vector2 coord2screen(int x, int y)
 }
 
 // BFS FUNCTIONS //////////////////////////////////////////////////////////
-add_tile_to_frontier(int index)
+void add_tile_to_frontier(int tile_index, int path_length)
 {
-    
+    frontier[frontier_count] = (frontier_data_t){
+        .index = tile_index,
+        .path_length = path_length,
+    };
+    frontier_count++;
+}
+
+frontier_data_t get_tile_from_frontier(void)
+{
+    frontier_data_t return_val = frontier[0];
+
+    for (int i = 0; i < frontier_count - 1; i++)
+    {
+        frontier[i] = frontier[i + 1];
+    }
+
+    frontier_count--;
+
+    return return_val;
+}
+
+void add_tile_to_reached(int tile_index)
+{
+    for (int i = 0; i < reached_count; i++)
+    {
+        if (reached[i] == tile_index)
+        {
+            return;
+        }
+    }
+
+    reached[reached_count] = tile_index;
+    reached_count++;
+}
+
+bool tile_is_reached(int tile_index)
+{
+    for (int i = 0; i < reached_count; i++)
+    {
+        if (reached[i] == tile_index)
+        {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+frontier_data_t find_farthest_away_tile(int x, int y)
+{
+    frontier_count = 0;
+    reached_count = 0;
+
+    int source_index = coord2index(x, y);
+    frontier_data_t farthest_away = {0};
+
+    add_tile_to_frontier(source_index, 0);
+    add_tile_to_reached(source_index);
+
+    while (frontier_count > 0)
+    {
+        frontier_data_t current_frontier_tile = get_tile_from_frontier();
+        Vector2 current_position = index2coord(current_frontier_tile.index);
+
+        side_rules_t current_tile_connections = map_tiles[current_frontier_tile.index].tile->side_rules;
+
+        // CHECK TOP
+        if (current_tile_connections.top)
+        {
+            if (!tile_is_reached(coord2index(current_position.x, current_position.y - 1)))
+            {
+                add_tile_to_frontier(coord2index(current_position.x, current_position.y - 1), current_frontier_tile.path_length + 1);
+                add_tile_to_reached(coord2index(current_position.x, current_position.y - 1));
+            }
+        }
+
+        // CHECK BOTTOM
+        if (current_tile_connections.bottom)
+        {
+            if (!tile_is_reached(coord2index(current_position.x, current_position.y + 1)))
+            {
+                add_tile_to_frontier(coord2index(current_position.x, current_position.y + 1), current_frontier_tile.path_length + 1);
+                add_tile_to_reached(coord2index(current_position.x, current_position.y + 1));
+            }
+        }
+
+        // CHECK LEFT
+        if (current_tile_connections.left)
+        {
+            if (!tile_is_reached(coord2index(current_position.x - 1, current_position.y)))
+            {
+                add_tile_to_frontier(coord2index(current_position.x - 1, current_position.y), current_frontier_tile.path_length + 1);
+                add_tile_to_reached(coord2index(current_position.x - 1, current_position.y));
+            }
+        }
+
+        // CHECK RIGHT
+        if (current_tile_connections.right)
+        {
+            if (!tile_is_reached(coord2index(current_position.x + 1, current_position.y)))
+            {
+                add_tile_to_frontier(coord2index(current_position.x + 1, current_position.y), current_frontier_tile.path_length + 1);
+                add_tile_to_reached(coord2index(current_position.x + 1, current_position.y));
+            }
+        }
+
+        if (current_frontier_tile.path_length > farthest_away.path_length)
+        {
+            farthest_away = current_frontier_tile;
+        }
+    }
+
+    return farthest_away;
 }
 
 // TILE FUNCTIONS //////////////////////////////////////////////////////////
@@ -581,6 +701,12 @@ void generate_new_map()
         generate_new_map();
         return;
     }
+
+    frontier_data_t exit = find_farthest_away_tile(start_pos.x, start_pos.y);
+
+    printf("%d | %d\n", exit.path_length, exit.index);
+
+    map_tiles[exit.index].special_tile = STYPE_EXIT;
 }
 
 // MAIN FUNCTION //////////////////////////////////////////////////////////
