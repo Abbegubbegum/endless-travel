@@ -258,6 +258,7 @@ void place_next_connected_tile(void)
 
 void generate_new_map()
 {
+    clock_t start = clock();
     algorithm_finished = false;
     road_percent = ROAD_PERCENT_BASE;
     house_count = 0;
@@ -289,6 +290,10 @@ void generate_new_map()
     printf("%d | %d\n", exit.path_length, exit.index);
 
     map_tiles[exit.index].special_tile = STYPE_EXIT;
+
+    clock_t end = clock();
+
+    printf("TIME: %f\n", ((double)end - start) / CLOCKS_PER_SEC);
 }
 
 /* DEPRECATED
