@@ -4,7 +4,7 @@
 #ifndef __COMMON_H_
 #define __COMMON_H_
 
-map_tile_t map_tiles[];
+city_tile_t city_tiles[];
 
 int coord2index(int x, int y);
 

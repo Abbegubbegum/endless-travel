@@ -1,17 +1,24 @@
 typedef enum
 {
-    TTYPE_NONE,
-    TTYPE_ROAD,
-    TTYPE_HOUSE,
-} tile_type_e;
+    C_TTYPE_NONE,
+    C_TTYPE_ROAD,
+    C_TTYPE_HOUSE,
+} city_tile_type_e;
 
 typedef enum
 {
-    STYPE_NONE,
-    STYPE_START,
-    STYPE_EXIT,
-    STYPE_SHOP,
-} special_tile_e;
+    C_STYPE_NONE,
+    C_STYPE_START,
+    C_STYPE_EXIT,
+    C_STYPE_SHOP,
+} city_special_tile_e;
+
+typedef enum
+{
+    GS_NONE,
+    GS_MAP,
+    GS_CITY,
+} gamestate_e;
 
 typedef struct
 {
@@ -25,17 +32,17 @@ typedef struct
 {
     Texture2D texture;
     side_rules_t side_rules;
-} tile_t;
+} wfc_tile_t;
 
 typedef struct
 {
-    tile_t tiles[16];
+    wfc_tile_t tiles[16];
     int tile_count;
-} tileset_t;
+} wfc_tileset_t;
 
 typedef struct
 {
-    tile_t *tile;
-    tile_type_e tile_type;
-    special_tile_e special_tile;
-} map_tile_t;
+    wfc_tile_t *tile;
+    city_tile_type_e tile_type;
+    city_special_tile_e special_tile;
+} city_tile_t;

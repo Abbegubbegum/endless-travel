@@ -1,8 +1,8 @@
 typedef struct
 {
-    tile_t *road_options[16];
+    wfc_tile_t *road_options[16];
     int road_count;
-    tile_t *house_options[16];
+    wfc_tile_t *house_options[16];
     int house_count;
     int count;
 } entropy_t;
@@ -13,7 +13,7 @@ typedef struct
     int path_length;
 } frontier_data_t;
 
-bool algorithm_finished = false;
+bool city_is_generated = false;
 
 const int ROAD_PERCENT_BASE = 50;
 const int ROAD_PERCENT_CHANGE_RATE = 30;
@@ -24,9 +24,9 @@ const int MAX_HOUSES = 10;
 int house_count = 0;
 
 // BFS VARIABLES
-frontier_data_t frontier[MAP_SIZE] = {0};
+frontier_data_t frontier[CITY_SIZE] = {0};
 int frontier_count = 0;
-int reached[MAP_SIZE] = {0};
+int reached[CITY_SIZE] = {0};
 int reached_count = 0;
 
 // BFS FUNCTIONS //////////////////////////////////////////////////////////
@@ -96,7 +96,7 @@ frontier_data_t find_farthest_away_tile(int x, int y)
         frontier_data_t current_frontier_tile = get_tile_from_frontier();
         Vector2 current_position = index2coord(current_frontier_tile.index);
 
-        side_rules_t current_tile_connections = map_tiles[current_frontier_tile.index].tile->side_rules;
+        side_rules_t current_tile_connections = city_tiles[current_frontier_tile.index].tile->side_rules;
 
         // CHECK TOP
         if (current_tile_connections.top)
@@ -151,9 +151,9 @@ void place_road_tile(entropy_t entropy, Vector2 pos)
 {
     int tile_index = rand() % entropy.road_count;
 
-    map_tiles[coord2index(pos.x, pos.y)] = (map_tile_t){
+    city_tiles[coord2index(pos.x, pos.y)] = (city_tile_t){
         .tile = entropy.road_options[tile_index],
-        .tile_type = TTYPE_ROAD,
+        .tile_type = C_TTYPE_ROAD,
     };
 
     road_percent -= ROAD_PERCENT_CHANGE_RATE;
@@ -163,9 +163,9 @@ void place_house_tile(entropy_t entropy, Vector2 pos)
 {
     int tile_index = rand() % entropy.house_count;
 
-    map_tiles[coord2index(pos.x, pos.y)] = (map_tile_t){
+    city_tiles[coord2index(pos.x, pos.y)] = (city_tile_t){
         .tile = entropy.house_options[tile_index],
-        .tile_type = TTYPE_HOUSE,
+        .tile_type = C_TTYPE_HOUSE,
     };
     house_count++;
 
@@ -179,7 +179,7 @@ entropy_t calc_entropy(int x, int y)
 
     for (int i = 0; i < road_tileset.tile_count; i++)
     {
-        if (tile_is_placable(road_tileset.tiles[i], x, y))
+        if (city_tile_is_placable(road_tileset.tiles[i], x, y))
         {
             entropy.road_options[entropy.road_count] = &road_tileset.tiles[i];
             entropy.road_count++;
@@ -189,7 +189,7 @@ entropy_t calc_entropy(int x, int y)
 
     for (int i = 0; i < house_tileset.tile_count; i++)
     {
-        if (tile_is_placable(house_tileset.tiles[i], x, y))
+        if (city_tile_is_placable(house_tileset.tiles[i], x, y))
         {
             entropy.house_options[entropy.house_count] = &house_tileset.tiles[i];
             entropy.house_count++;
@@ -207,12 +207,12 @@ void place_next_connected_tile(void)
     };
     Vector2 lowest_entropy_pos = {0};
 
-    for (int y = 1; y < MAP_ROWS - 1; y++)
+    for (int y = 1; y < CITY_ROWS - 1; y++)
     {
-        for (int x = 1; x < MAP_COLS - 1; x++)
+        for (int x = 1; x < CITY_COLS - 1; x++)
         {
             // IF IT IS NOT ALREADY COLLAPSED AND IS CONNECTED TO THE MAIN PATH
-            if (map_tiles[coord2index(x, y)].tile == NULL && tile_is_connected(x, y))
+            if (city_tiles[coord2index(x, y)].tile == NULL && city_tile_is_connected(x, y))
             {
                 entropy_t entropy = calc_entropy(x, y);
                 if (entropy.count < entropy_to_collapse.count && entropy.count != 0)
@@ -226,7 +226,7 @@ void place_next_connected_tile(void)
 
     if (entropy_to_collapse.count == __INT32_MAX__)
     {
-        algorithm_finished = true;
+        city_is_generated = true;
         return;
     }
 
@@ -256,40 +256,40 @@ void place_next_connected_tile(void)
     // road_percent -= ROAD_PERCENT_CHANGE_RATE;
 }
 
-void generate_new_map()
+void generate_new_city()
 {
     clock_t start = clock();
-    algorithm_finished = false;
+    city_is_generated = false;
     road_percent = ROAD_PERCENT_BASE;
     house_count = 0;
 
-    for (int i = 0; i < MAP_SIZE; i++)
+    for (int i = 0; i < CITY_SIZE; i++)
     {
-        map_tiles[i] = (map_tile_t){0};
+        city_tiles[i] = (city_tile_t){0};
     }
 
-    map_tiles[coord2index(start_pos.x, start_pos.y)] = (map_tile_t){
+    city_tiles[coord2index(city_start_pos.x, city_start_pos.y)] = (city_tile_t){
         .tile = &road_tileset.tiles[0],
-        .tile_type = TTYPE_ROAD,
-        .special_tile = STYPE_START,
+        .tile_type = C_TTYPE_ROAD,
+        .special_tile = C_STYPE_START,
     };
 
-    while (!algorithm_finished)
+    while (!city_is_generated)
     {
         place_next_connected_tile();
     }
 
     if (house_count < MIN_HOUSES || house_count > MAX_HOUSES)
     {
-        generate_new_map();
+        generate_new_city();
         return;
     }
 
-    frontier_data_t exit = find_farthest_away_tile(start_pos.x, start_pos.y);
+    frontier_data_t exit = find_farthest_away_tile(city_start_pos.x, city_start_pos.y);
 
     printf("%d | %d\n", exit.path_length, exit.index);
 
-    map_tiles[exit.index].special_tile = STYPE_EXIT;
+    city_tiles[exit.index].special_tile = C_STYPE_EXIT;
 
     clock_t end = clock();
 
@@ -299,17 +299,17 @@ void generate_new_map()
 /* DEPRECATED
 void place_next_tile(void)
 {
-    entropy_t entropy_map[MAP_SIZE] = {0};
+    entropy_t entropy_map[CITY_SIZE] = {0};
 
     int lowest_entropy = __INT32_MAX__;
     Vector2 lowest_entropy_pos = {0};
 
-    for (int y = 1; y < MAP_ROWS - 1; y++)
+    for (int y = 1; y < CITY_ROWS - 1; y++)
     {
-        for (int x = 1; x < MAP_COLS - 1; x++)
+        for (int x = 1; x < CITY_COLS - 1; x++)
         {
             // IF IT IS NOT ALREADY COLLAPSED
-            if (map_tiles[coord2index(x, y)].tile == NULL)
+            if (city_tiles[coord2index(x, y)].tile == NULL)
             {
                 entropy_map[coord2index(x, y)] = calc_entropy(x, y);
                 if (entropy_map[coord2index(x, y)].count < lowest_entropy && entropy_map[coord2index(x, y)].count != 0)
@@ -323,7 +323,7 @@ void place_next_tile(void)
 
     if (lowest_entropy == __INT32_MAX__)
     {
-        algorithm_finished = true;
+        city_is_generated = true;
         return;
     }
 
@@ -339,7 +339,7 @@ void place_next_tile(void)
         {
             if (tile_index == 0)
             {
-                map_tiles[coord2index(lowest_entropy_pos.x, lowest_entropy_pos.y)] = &road_tileset.tiles[i];
+                city_tiles[coord2index(lowest_entropy_pos.x, lowest_entropy_pos.y)] = &road_tileset.tiles[i];
                 break;
             }
             else
