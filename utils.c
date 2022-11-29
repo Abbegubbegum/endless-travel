@@ -1,3 +1,9 @@
+// Vector Functions
+bool v_eq_v(Vector2 v1, Vector2 v2)
+{
+    return (v1.x == v2.x && v1.y == v2.y);
+};
+
 // CONVERSION FUNCTIONS //////////////////////////////////////////////////////////
 int city_coord2index(int x, int y)
 {

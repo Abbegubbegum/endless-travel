@@ -118,6 +118,12 @@ void process_point(void)
 
 #include <math.h>
 
+typedef struct
+{
+    Vector2 p0;
+    Vector2 p1;
+} edge_t;
+
 Vector2 _points[264];
 
 point_list_t points = {
@@ -125,10 +131,19 @@ point_list_t points = {
     .count = 0,
 };
 
+edge_t edges[264];
+int edge_count = 0;
+
 void add_point_to_list(point_list_t *list, Vector2 point)
 {
     list->items[list->count] = point;
     list->count++;
+}
+
+void add_edge(edge_t edge)
+{
+    edges[edge_count] = edge;
+    edge_count++;
 }
 
 void insert_point_to_grid(int ncols, Vector2 grid[][ncols], int cellsize, Vector2 point)
@@ -142,6 +157,12 @@ void remove_point_from_list(point_list_t *list, int index)
 {
     list->count--;
     list->items[index] = list->items[list->count];
+}
+
+void remove_edge(int index)
+{
+    edge_count--;
+    edges[index] = edges[edge_count];
 }
 
 float dist(Vector2 p0, Vector2 p1)
@@ -267,10 +288,65 @@ Vector2 get_point_on_line(int x, Vector2 p0, float k)
     };
 }
 
+bool edges_has_shared_neighbors(edge_t e1, edge_t e2)
+{
+    return (v_eq_v(e1.p0, e2.p0) || v_eq_v(e1.p0, e2.p1) || v_eq_v(e1.p1, e2.p0) || v_eq_v(e1.p1, e2.p1));
+}
+
 void generate_map(void)
 {
     // Generate the points using poisson disk sampling distribution algorithm
     poisson_disk_sampling(150, 30, &points);
+
+    for (int i = 0; i < points.count - 1; i++)
+    {
+        for (int j = i + 1; j < points.count; j++)
+        {
+            // If they are far away from eachother
+            if (!CheckCollisionPointCircle(points.items[i], points.items[j], 290))
+            {
+                continue;
+            }
+
+            // Vector2 mid_point = (Vector2){
+            //     .x = (points.items[i].x + points.items[j].x) / 2,
+            //     .y = (points.items[i].y + points.items[j].y) / 2,
+            // };
+
+            // float k = (points.items[j].y - points.items[i].y) / (points.items[j].x - points.items[i].x);
+
+            // float opposite_k = -1 / k;
+
+            // printf("Coord 1: %.0f, %.0f\n", points.items[i].x, points.items[i].y);
+            // printf("Coord 2: %.0f, %.0f\n", points.items[j].x, points.items[j].y);
+
+            // printf("Mid point and slope: %.0f, %.0f | %.2f\n", mid_point.x, mid_point.y, k);
+            // printf("Opposite: %f\n", opposite_k);
+
+            add_edge((edge_t){
+                .p0 = points.items[i],
+                .p1 = points.items[j],
+            });
+        }
+    }
+
+    // IF TWO EDGES INTERSECT, REMOVE ONE
+    for (int i = 0; i < edge_count - 1; i++)
+    {
+        for (int j = i + 1; j < edge_count; j++)
+        {
+            if (!edges_has_shared_neighbors(edges[i], edges[j]))
+            {
+                if (CheckCollisionLines(edges[i].p0, edges[i].p1, edges[j].p0, edges[j].p1, NULL))
+                {
+
+                    printf("EDGE 1: %f, %f -> %f, %f\n", edges[i].p0.x, edges[i].p0.y, edges[i].p1.x, edges[i].p1.y);
+                    printf("EDGE 2: %f, %f -> %f, %f\n", edges[j].p0.x, edges[j].p0.y, edges[j].p1.x, edges[j].p1.y);
+                    remove_edge(rand() % 2 == 0 ? i : j);
+                }
+            }
+        }
+    }
 
     // Create the delauney triangles from the points
 
@@ -285,35 +361,11 @@ void draw_map(void)
         DrawCircleV(points.items[i], 5, BLACK);
     }
 
-    for (int i = 0; i < points.count - 1; i++)
+    for (int i = 0; i < edge_count; i++)
     {
-        for (int j = i + 1; j < points.count; j++)
-        {
+        DrawLineV(edges[i].p0, edges[i].p1, BLACK);
 
-            if (!CheckCollisionPointCircle(points.items[i], points.items[j], 290))
-            {
-                continue;
-            }
-
-            Vector2 mid_point = (Vector2){
-                .x = (points.items[i].x + points.items[j].x) / 2,
-                .y = (points.items[i].y + points.items[j].y) / 2,
-            };
-
-            float k = (points.items[j].y - points.items[i].y) / (points.items[j].x - points.items[i].x);
-
-            float opposite_k = -1 / k;
-
-            // printf("Coord 1: %.0f, %.0f\n", points.items[i].x, points.items[i].y);
-            // printf("Coord 2: %.0f, %.0f\n", points.items[j].x, points.items[j].y);
-
-            // printf("Mid point and slope: %.0f, %.0f | %.2f\n", mid_point.x, mid_point.y, k);
-            // printf("Opposite: %f\n", opposite_k);
-
-            DrawCircleV(mid_point, 2, RED);
-
-            DrawLineV(get_point_on_line(-10, mid_point, opposite_k), get_point_on_line(SCREEN_WIDTH + 10, mid_point, opposite_k), GREEN);
-        }
+        // DrawLineV(get_point_on_line(-10, mid_point, opposite_k), get_point_on_line(SCREEN_WIDTH + 10, mid_point, opposite_k), GREEN);
     }
 }
 
