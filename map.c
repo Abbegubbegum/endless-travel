@@ -124,6 +124,8 @@ typedef struct
     Vector2 p1;
 } edge_t;
 
+const int HIGHLIGHT_RADIUS = 50;
+
 Vector2 _points[264];
 
 point_list_t points = {
@@ -375,13 +377,19 @@ void draw_highlighted_city()
 
     int closest_city_index = 0;
 
+    float closest_distance = SCREEN_HEIGHT * SCREEN_WIDTH;
+
     for (int i = 0; i < points.count; i++)
     {
-        if (dist(mouse_pos, points.items[i]) < dist(mouse_pos, points.items[closest_city_index]))
+        if (dist(mouse_pos, points.items[i]) < closest_distance)
         {
             closest_city_index = i;
+            closest_distance = dist(mouse_pos, points.items[i]);
         }
     }
 
-    DrawCircleV(points.items[closest_city_index], 20, GRAY);
+    if (closest_distance < HIGHLIGHT_RADIUS)
+    {
+        DrawCircleV(points.items[closest_city_index], 20, GRAY);
+    }
 }
