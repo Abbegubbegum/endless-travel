@@ -118,29 +118,12 @@ void process_point(void)
 
 #include <math.h>
 
-const int POINT_EDGE_MARGIN = 100;
-
-const int GRIDSIZE = 10;
-const float JITTER = 0.5;
-
-const float GRIDX_TO_SCREEN = SCREEN_WIDTH / GRIDSIZE;
-const float GRIDY_TO_SCREEN = SCREEN_HEIGHT / GRIDSIZE;
-
-Vector2 _points[8464];
+Vector2 _points[264];
 
 point_list_t points = {
     .items = _points,
     .count = 0,
 };
-
-// Gets a random point with a bit of margin from the edges of the screen
-Vector2 get_random_point(void)
-{
-    return (Vector2){
-        .x = (rand() % (SCREEN_WIDTH - POINT_EDGE_MARGIN * 2)) + POINT_EDGE_MARGIN,
-        .y = (rand() % (SCREEN_HEIGHT - POINT_EDGE_MARGIN * 2)) + POINT_EDGE_MARGIN,
-    };
-}
 
 void add_point_to_list(point_list_t *list, Vector2 point)
 {
@@ -274,42 +257,24 @@ void poisson_disk_sampling(int radius, int k, point_list_t *points)
     }
 }
 
+Vector2 get_point_on_line(int x, Vector2 p0, float k)
+{
+    float m = p0.y - (k * p0.x);
+
+    return (Vector2){
+        .x = x,
+        .y = k * x + m,
+    };
+}
+
 void generate_map(void)
 {
-    // // Spawns random points on the map
-    // for (int y = 0; y < GRIDSIZE; y++)
-    // {
-    //     for (int x = 0; x < GRIDSIZE; x++)
-    //     {
-    //         add_point_to_list(&points, (Vector2){
-    //                                        .x = (x + (JITTER * (((rand() % 2000) - 1000.0) / 1000.0))) * GRIDX_TO_SCREEN,
-    //                                        .y = (y + (JITTER * (((rand() % 2000) - 1000.0) / 1000.0))) * GRIDY_TO_SCREEN,
-    //                                    });
-    //     }
-    // }
-
+    // Generate the points using poisson disk sampling distribution algorithm
     poisson_disk_sampling(150, 30, &points);
 
-    // for (int i = 0; i < points_count - 1; i++)
-    // {
-    //     for (int j = i + 1; j < points_count; j++)
-    //     {
-    //         Vector2 mid_point = (Vector2){
-    //             .x = (points[i].x + points[j].x) / 2,
-    //             .y = (points[i].y + points[j].y) / 2,
-    //         };
+    // Create the delauney triangles from the points
 
-    //         float k = (points[j].y - points[i].y) / (points[j].x - points[i].x);
-
-    //         float opposite_k = -1 / k;
-
-    //         printf("Coord 1: %.0f, %.0f\n", points[i].x, points[i].y);
-    //         printf("Coord 2: %.0f, %.0f\n", points[j].x, points[j].y);
-
-    //         printf("Mid point and slope: %.0f, %.0f | %.2f\n", mid_point.x, mid_point.y, k);
-    //         printf("Opposite: %f\n", opposite_k);
-    //     }
-    // }
+    // Create the voronoi nodes from the delauney triangles
 }
 
 // Draws the voronoi map
@@ -317,6 +282,37 @@ void draw_map(void)
 {
     for (int i = 0; i < points.count; i++)
     {
-        DrawCircleV(points.items[i], 3, BLACK);
+        DrawCircleV(points.items[i], 5, BLACK);
+    }
+
+    for (int i = 0; i < points.count - 1; i++)
+    {
+        for (int j = i + 1; j < points.count; j++)
+        {
+
+            if (!CheckCollisionPointCircle(points.items[i], points.items[j], 290))
+            {
+                continue;
+            }
+
+            Vector2 mid_point = (Vector2){
+                .x = (points.items[i].x + points.items[j].x) / 2,
+                .y = (points.items[i].y + points.items[j].y) / 2,
+            };
+
+            float k = (points.items[j].y - points.items[i].y) / (points.items[j].x - points.items[i].x);
+
+            float opposite_k = -1 / k;
+
+            // printf("Coord 1: %.0f, %.0f\n", points.items[i].x, points.items[i].y);
+            // printf("Coord 2: %.0f, %.0f\n", points.items[j].x, points.items[j].y);
+
+            // printf("Mid point and slope: %.0f, %.0f | %.2f\n", mid_point.x, mid_point.y, k);
+            // printf("Opposite: %f\n", opposite_k);
+
+            DrawCircleV(mid_point, 2, RED);
+
+            DrawLineV(get_point_on_line(-10, mid_point, opposite_k), get_point_on_line(SCREEN_WIDTH + 10, mid_point, opposite_k), GREEN);
+        }
     }
 }
