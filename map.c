@@ -1,3 +1,5 @@
+/*
+
 typedef struct circle_event_t;
 
 typedef struct voronoi_seg_t
@@ -25,24 +27,10 @@ typedef struct
     bool valid;
 } circle_event_t;
 
-const int POINT_EDGE_MARGIN = 100;
-
-Vector2 points[64];
-int points_count = 0;
-
 circle_event_t *events[64];
 int events_count = 0;
 
 voronoi_arc_t *root = {0};
-
-// Gets a random point with a bit of margin from the edges of the screen
-Vector2 get_random_point(void)
-{
-    return (Vector2){
-        .x = (rand() % (SCREEN_WIDTH - POINT_EDGE_MARGIN * 2)) + POINT_EDGE_MARGIN,
-        .y = (rand() % (SCREEN_HEIGHT - POINT_EDGE_MARGIN * 2)) + POINT_EDGE_MARGIN,
-    };
-}
 
 // Sort the points array by x in ascending order
 void sort_points(void)
@@ -126,50 +114,207 @@ void process_point(void)
     front_insert(point);
 }
 
+*/
+
+#include <math.h>
+
+const int POINT_EDGE_MARGIN = 100;
+
+const int GRIDSIZE = 25;
+const float JITTER = 0.5;
+
+const float GRIDX_TO_SCREEN = SCREEN_WIDTH / GRIDSIZE;
+const float GRIDY_TO_SCREEN = SCREEN_HEIGHT / GRIDSIZE;
+
+Vector2 _points[GRIDSIZE * GRIDSIZE];
+
+point_list_t points = {
+    .items = _points,
+    .count = 0,
+};
+
+// Gets a random point with a bit of margin from the edges of the screen
+Vector2 get_random_point(void)
+{
+    return (Vector2){
+        .x = (rand() % (SCREEN_WIDTH - POINT_EDGE_MARGIN * 2)) + POINT_EDGE_MARGIN,
+        .y = (rand() % (SCREEN_HEIGHT - POINT_EDGE_MARGIN * 2)) + POINT_EDGE_MARGIN,
+    };
+}
+
+void add_point_to_list(point_list_t *list, Vector2 point)
+{
+    list->items[list->count] = point;
+    list->count++;
+}
+
+void insert_point_to_grid(Vector2 **grid, int cellsize, Vector2 point)
+{
+    int x = point.x / cellsize;
+    int y = point.y / cellsize;
+    grid[y][x] = point;
+}
+
+void remove_point_from_list(point_list_t *list, int index)
+{
+    list->count--;
+    list->items[index] = list->items[list->count];
+}
+
+float dist(Vector2 p0, Vector2 p1)
+{
+    float x = p0.x - p1.x;
+    float y = p0.y - p1.y;
+
+    return sqrt(x * x + y * y);
+}
+
+bool is_point_valid(Vector2 **grid, int nrows, int ncols, int cellsize, Vector2 p, int r)
+{
+    if (p.x < 0 || p.x >= SCREEN_WIDTH || p.y < 0 || p.y >= SCREEN_HEIGHT)
+    {
+        return false;
+    }
+
+    int xindex = p.x / cellsize;
+    int yindex = p.y / cellsize;
+
+    int y0 = max(yindex - 1, 0);
+    int y1 = min(yindex + 1, nrows);
+    int x0 = fmax(xindex - 1, 0);
+    int x1 = fmin(xindex + 1, ncols);
+
+    for (int y = y0; y < y1; y++)
+    {
+        for (int x = x0; x < x1; x++)
+        {
+            if (grid[y][x].x != -1 && grid[y][x].y != -1)
+            {
+                if (dist(p, (Vector2){.x = grid[y][x].x, .y = grid[y][x].y}) < r)
+                {
+                    return false;
+                }
+            }
+        }
+    }
+
+    return true;
+}
+
+void poisson_disk_sampling(int radius, int k, point_list_t *points)
+{
+    int N = 2;
+
+    int cellsize = radius / sqrt(N);
+
+    int grid_cols = ceil(SCREEN_WIDTH / cellsize) + 1;
+    int grid_rows = ceil(SCREEN_HEIGHT / cellsize) + 1;
+
+    Vector2 grid[grid_rows][grid_cols];
+
+    Vector2 _active[grid_rows * grid_cols];
+
+    point_list_t active = {
+        .items = _active,
+        .count = 0,
+    };
+
+    Vector2 p0 = (Vector2){
+        .x = rand() % SCREEN_WIDTH,
+        .y = rand() % SCREEN_HEIGHT,
+    };
+
+    for (int y = 0; y < grid_rows; y++)
+    {
+        for (int x = 0; x < grid_cols; x++)
+        {
+            grid[y][x] = (Vector2){
+                .x = -1,
+                .y = -1,
+            };
+        }
+    }
+
+    insert_point_to_grid(grid, cellsize, p0);
+    add_point_to_list(points, p0);
+    add_point_to_list(&active, p0);
+
+    while (active.count > 0)
+    {
+        int index = rand() % active.count;
+        Vector2 p = active.items[index];
+
+        bool found = false;
+
+        for (int i = 0; i < k; i++)
+        {
+            float theta = (rand() % 360) * DEG2RAD;
+
+            int r = (rand() % radius) + radius;
+
+            Vector2 new_p = {
+                .x = p.x + r * cos(theta),
+                .y = p.y + r * sin(theta),
+            };
+
+            if (is_point_valid(grid, grid_rows, grid_cols, cellsize, new_p, radius))
+            {
+                add_point_to_list(points, new_p);
+                insert_point_to_grid(grid, cellsize, new_p);
+                add_point_to_list(&active, new_p);
+                found = true;
+                break;
+            }
+        }
+
+        if (!found)
+        {
+            remove_point_from_list(&active, index);
+        }
+    }
+}
+
 void generate_map(void)
 {
     // Spawns random points on the map
-    for (int i = 0; i < 50; i++)
+    for (int y = 0; y < GRIDSIZE; y++)
     {
-        points[i] = get_random_point();
-        points_count++;
-        printf("%.0f, %.0f\n", points[i].x, points[i].y);
-    }
-
-    // Sort the arrays
-    sort_points();
-    sort_events();
-
-    // While there are points left to process
-    while (points_count > 0)
-    {
-        // If there is a circle event that has higher priority than the next point, process it
-        if (events_count > 0 && events[0]->x <= points[0].x)
+        for (int x = 0; x < GRIDSIZE; x++)
         {
-            process_event();
-        }
-        // Else process the next point
-        else
-        {
-            process_point();
+            _points[y * GRIDSIZE + x] = (Vector2){
+                .x = (x + (JITTER * (((rand() % 2000) - 1000.0) / 1000.0))) * GRIDX_TO_SCREEN,
+                .y = (y + (JITTER * (((rand() % 2000) - 1000.0) / 1000.0))) * GRIDY_TO_SCREEN,
+            };
         }
     }
 
-    // Process the remaining circle events
-    while (events_count > 0)
-    {
-        process_event();
-    }
+    // for (int i = 0; i < points_count - 1; i++)
+    // {
+    //     for (int j = i + 1; j < points_count; j++)
+    //     {
+    //         Vector2 mid_point = (Vector2){
+    //             .x = (points[i].x + points[j].x) / 2,
+    //             .y = (points[i].y + points[j].y) / 2,
+    //         };
 
-    // Clean up dangling edges
-    finish_edges();
+    //         float k = (points[j].y - points[i].y) / (points[j].x - points[i].x);
+
+    //         float opposite_k = -1 / k;
+
+    //         printf("Coord 1: %.0f, %.0f\n", points[i].x, points[i].y);
+    //         printf("Coord 2: %.0f, %.0f\n", points[j].x, points[j].y);
+
+    //         printf("Mid point and slope: %.0f, %.0f | %.2f\n", mid_point.x, mid_point.y, k);
+    //         printf("Opposite: %f\n", opposite_k);
+    //     }
+    // }
 }
 
 // Draws the voronoi map
 void draw_map(void)
 {
-    for (int i = 0; i < points_count; i++)
+    for (int i = 0; i < points.count; i++)
     {
-        DrawCircleV(points[i], 3, BLACK);
+        DrawCircleV(points.items[i], 3, BLACK);
     }
 }

@@ -85,7 +85,7 @@ frontier_data_t find_farthest_away_tile(int x, int y)
     frontier_count = 0;
     reached_count = 0;
 
-    int source_index = coord2index(x, y);
+    int source_index = city_coord2index(x, y);
     frontier_data_t farthest_away = {0};
 
     add_tile_to_frontier(source_index, 0);
@@ -94,47 +94,47 @@ frontier_data_t find_farthest_away_tile(int x, int y)
     while (frontier_count > 0)
     {
         frontier_data_t current_frontier_tile = get_tile_from_frontier();
-        Vector2 current_position = index2coord(current_frontier_tile.index);
+        Vector2 current_position = city_index2coord(current_frontier_tile.index);
 
         side_rules_t current_tile_connections = city_tiles[current_frontier_tile.index].tile->side_rules;
 
         // CHECK TOP
         if (current_tile_connections.top)
         {
-            if (!tile_is_reached(coord2index(current_position.x, current_position.y - 1)))
+            if (!tile_is_reached(city_coord2index(current_position.x, current_position.y - 1)))
             {
-                add_tile_to_frontier(coord2index(current_position.x, current_position.y - 1), current_frontier_tile.path_length + 1);
-                add_tile_to_reached(coord2index(current_position.x, current_position.y - 1));
+                add_tile_to_frontier(city_coord2index(current_position.x, current_position.y - 1), current_frontier_tile.path_length + 1);
+                add_tile_to_reached(city_coord2index(current_position.x, current_position.y - 1));
             }
         }
 
         // CHECK BOTTOM
         if (current_tile_connections.bottom)
         {
-            if (!tile_is_reached(coord2index(current_position.x, current_position.y + 1)))
+            if (!tile_is_reached(city_coord2index(current_position.x, current_position.y + 1)))
             {
-                add_tile_to_frontier(coord2index(current_position.x, current_position.y + 1), current_frontier_tile.path_length + 1);
-                add_tile_to_reached(coord2index(current_position.x, current_position.y + 1));
+                add_tile_to_frontier(city_coord2index(current_position.x, current_position.y + 1), current_frontier_tile.path_length + 1);
+                add_tile_to_reached(city_coord2index(current_position.x, current_position.y + 1));
             }
         }
 
         // CHECK LEFT
         if (current_tile_connections.left)
         {
-            if (!tile_is_reached(coord2index(current_position.x - 1, current_position.y)))
+            if (!tile_is_reached(city_coord2index(current_position.x - 1, current_position.y)))
             {
-                add_tile_to_frontier(coord2index(current_position.x - 1, current_position.y), current_frontier_tile.path_length + 1);
-                add_tile_to_reached(coord2index(current_position.x - 1, current_position.y));
+                add_tile_to_frontier(city_coord2index(current_position.x - 1, current_position.y), current_frontier_tile.path_length + 1);
+                add_tile_to_reached(city_coord2index(current_position.x - 1, current_position.y));
             }
         }
 
         // CHECK RIGHT
         if (current_tile_connections.right)
         {
-            if (!tile_is_reached(coord2index(current_position.x + 1, current_position.y)))
+            if (!tile_is_reached(city_coord2index(current_position.x + 1, current_position.y)))
             {
-                add_tile_to_frontier(coord2index(current_position.x + 1, current_position.y), current_frontier_tile.path_length + 1);
-                add_tile_to_reached(coord2index(current_position.x + 1, current_position.y));
+                add_tile_to_frontier(city_coord2index(current_position.x + 1, current_position.y), current_frontier_tile.path_length + 1);
+                add_tile_to_reached(city_coord2index(current_position.x + 1, current_position.y));
             }
         }
 
@@ -151,7 +151,7 @@ void place_road_tile(entropy_t entropy, Vector2 pos)
 {
     int tile_index = rand() % entropy.road_count;
 
-    city_tiles[coord2index(pos.x, pos.y)] = (city_tile_t){
+    city_tiles[city_coord2index(pos.x, pos.y)] = (city_tile_t){
         .tile = entropy.road_options[tile_index],
         .tile_type = C_TTYPE_ROAD,
     };
@@ -163,7 +163,7 @@ void place_house_tile(entropy_t entropy, Vector2 pos)
 {
     int tile_index = rand() % entropy.house_count;
 
-    city_tiles[coord2index(pos.x, pos.y)] = (city_tile_t){
+    city_tiles[city_coord2index(pos.x, pos.y)] = (city_tile_t){
         .tile = entropy.house_options[tile_index],
         .tile_type = C_TTYPE_HOUSE,
     };
@@ -212,7 +212,7 @@ void place_next_connected_tile(void)
         for (int x = 1; x < CITY_COLS - 1; x++)
         {
             // IF IT IS NOT ALREADY COLLAPSED AND IS CONNECTED TO THE MAIN PATH
-            if (city_tiles[coord2index(x, y)].tile == NULL && city_tile_is_connected(x, y))
+            if (city_tiles[city_coord2index(x, y)].tile == NULL && city_tile_is_connected(x, y))
             {
                 entropy_t entropy = calc_entropy(x, y);
                 if (entropy.count < entropy_to_collapse.count && entropy.count != 0)
@@ -268,7 +268,7 @@ void generate_new_city()
         city_tiles[i] = (city_tile_t){0};
     }
 
-    city_tiles[coord2index(city_start_pos.x, city_start_pos.y)] = (city_tile_t){
+    city_tiles[city_coord2index(city_start_pos.x, city_start_pos.y)] = (city_tile_t){
         .tile = &road_tileset.tiles[0],
         .tile_type = C_TTYPE_ROAD,
         .special_tile = C_STYPE_START,
@@ -309,12 +309,12 @@ void place_next_tile(void)
         for (int x = 1; x < CITY_COLS - 1; x++)
         {
             // IF IT IS NOT ALREADY COLLAPSED
-            if (city_tiles[coord2index(x, y)].tile == NULL)
+            if (city_tiles[city_coord2index(x, y)].tile == NULL)
             {
-                entropy_map[coord2index(x, y)] = calc_entropy(x, y);
-                if (entropy_map[coord2index(x, y)].count < lowest_entropy && entropy_map[coord2index(x, y)].count != 0)
+                entropy_map[city_coord2index(x, y)] = calc_entropy(x, y);
+                if (entropy_map[city_coord2index(x, y)].count < lowest_entropy && entropy_map[city_coord2index(x, y)].count != 0)
                 {
-                    lowest_entropy = entropy_map[coord2index(x, y)].count;
+                    lowest_entropy = entropy_map[city_coord2index(x, y)].count;
                     lowest_entropy_pos = (Vector2){.x = x, .y = y};
                 }
             }
@@ -329,7 +329,7 @@ void place_next_tile(void)
 
     printf("%d | %0.f, %0.f\n", lowest_entropy, lowest_entropy_pos.x, lowest_entropy_pos.y);
 
-    entropy_t entropy_to_collapse = entropy_map[coord2index(lowest_entropy_pos.x, lowest_entropy_pos.y)];
+    entropy_t entropy_to_collapse = entropy_map[city_coord2index(lowest_entropy_pos.x, lowest_entropy_pos.y)];
 
     int tile_index = rand() % entropy_to_collapse.count;
 
@@ -339,7 +339,7 @@ void place_next_tile(void)
         {
             if (tile_index == 0)
             {
-                city_tiles[coord2index(lowest_entropy_pos.x, lowest_entropy_pos.y)] = &road_tileset.tiles[i];
+                city_tiles[city_coord2index(lowest_entropy_pos.x, lowest_entropy_pos.y)] = &road_tileset.tiles[i];
                 break;
             }
             else

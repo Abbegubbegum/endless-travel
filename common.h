@@ -6,10 +6,10 @@
 
 city_tile_t city_tiles[];
 
-int coord2index(int x, int y);
+int city_coord2index(int x, int y);
 
-Vector2 index2coord(int i);
+Vector2 city_index2coord(int i);
 
-Vector2 coord2screen(int x, int y);
+Vector2 city_coord2screen(int x, int y);
 
 #endif

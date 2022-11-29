@@ -186,27 +186,27 @@ void draw_tiles(void)
         for (int x = 0; x < CITY_COLS; x++)
         {
             // IF IT EXISTS
-            if (city_tiles[coord2index(x, y)].tile != NULL)
+            if (city_tiles[city_coord2index(x, y)].tile != NULL)
             {
-                Vector2 coord = coord2screen(x, y);
+                Vector2 coord = city_coord2screen(x, y);
 
-                if (city_tiles[coord2index(x, y)].special_tile == C_STYPE_NONE)
+                if (city_tiles[city_coord2index(x, y)].special_tile == C_STYPE_NONE)
                 {
-                    DrawTexture(city_tiles[coord2index(x, y)].tile->texture, coord.x, coord.y, WHITE);
+                    DrawTexture(city_tiles[city_coord2index(x, y)].tile->texture, coord.x, coord.y, WHITE);
                 }
                 else
                 {
-                    if (city_tiles[coord2index(x, y)].special_tile == C_STYPE_START)
+                    if (city_tiles[city_coord2index(x, y)].special_tile == C_STYPE_START)
                     {
-                        DrawTexture(city_tiles[coord2index(x, y)].tile->texture, coord.x, coord.y, GREEN);
+                        DrawTexture(city_tiles[city_coord2index(x, y)].tile->texture, coord.x, coord.y, GREEN);
                     }
-                    else if (city_tiles[coord2index(x, y)].special_tile == C_STYPE_EXIT)
+                    else if (city_tiles[city_coord2index(x, y)].special_tile == C_STYPE_EXIT)
                     {
-                        DrawTexture(city_tiles[coord2index(x, y)].tile->texture, coord.x, coord.y, RED);
+                        DrawTexture(city_tiles[city_coord2index(x, y)].tile->texture, coord.x, coord.y, RED);
                     }
-                    else if (city_tiles[coord2index(x, y)].special_tile == C_STYPE_SHOP)
+                    else if (city_tiles[city_coord2index(x, y)].special_tile == C_STYPE_SHOP)
                     {
-                        DrawTexture(city_tiles[coord2index(x, y)].tile->texture, coord.x, coord.y, YELLOW);
+                        DrawTexture(city_tiles[city_coord2index(x, y)].tile->texture, coord.x, coord.y, YELLOW);
                     }
                 }
             }

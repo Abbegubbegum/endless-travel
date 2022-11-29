@@ -1,5 +1,7 @@
 {
 	"files.associations": {
-		"__config": "c"
+		"__config": "c",
+		"algorithm": "c",
+		"type_traits": "c"
 	}
 }

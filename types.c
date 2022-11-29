@@ -22,6 +22,12 @@ typedef enum
 
 typedef struct
 {
+    Vector2 *items;
+    int count;
+} point_list_t;
+
+typedef struct
+{
     int left;
     int right;
     int top;
