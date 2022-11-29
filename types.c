@@ -28,6 +28,12 @@ typedef struct
 
 typedef struct
 {
+    Vector2 p0;
+    Vector2 p1;
+} edge_t;
+
+typedef struct
+{
     int left;
     int right;
     int top;

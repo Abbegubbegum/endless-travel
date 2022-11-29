@@ -116,14 +116,6 @@ void process_point(void)
 
 */
 
-#include <math.h>
-
-typedef struct
-{
-    Vector2 p0;
-    Vector2 p1;
-} edge_t;
-
 const int HIGHLIGHT_RADIUS = 50;
 
 Vector2 _points[264];
@@ -295,11 +287,8 @@ bool edges_has_shared_neighbors(edge_t e1, edge_t e2)
     return (v_eq_v(e1.p0, e2.p0) || v_eq_v(e1.p0, e2.p1) || v_eq_v(e1.p1, e2.p0) || v_eq_v(e1.p1, e2.p1));
 }
 
-void generate_map(void)
+void lazy_edge_generation()
 {
-    // Generate the points using poisson disk sampling distribution algorithm
-    poisson_disk_sampling(150, 30, &points);
-
     for (int i = 0; i < points.count - 1; i++)
     {
         for (int j = i + 1; j < points.count; j++)
@@ -309,21 +298,6 @@ void generate_map(void)
             {
                 continue;
             }
-
-            // Vector2 mid_point = (Vector2){
-            //     .x = (points.items[i].x + points.items[j].x) / 2,
-            //     .y = (points.items[i].y + points.items[j].y) / 2,
-            // };
-
-            // float k = (points.items[j].y - points.items[i].y) / (points.items[j].x - points.items[i].x);
-
-            // float opposite_k = -1 / k;
-
-            // printf("Coord 1: %.0f, %.0f\n", points.items[i].x, points.items[i].y);
-            // printf("Coord 2: %.0f, %.0f\n", points.items[j].x, points.items[j].y);
-
-            // printf("Mid point and slope: %.0f, %.0f | %.2f\n", mid_point.x, mid_point.y, k);
-            // printf("Opposite: %f\n", opposite_k);
 
             add_edge((edge_t){
                 .p0 = points.items[i],
@@ -349,6 +323,16 @@ void generate_map(void)
             }
         }
     }
+}
+
+void generate_map(void)
+{
+    // Generate the points using poisson disk sampling distribution algorithm
+    poisson_disk_sampling(150, 30, &points);
+
+    lazy_edge_generation();
+
+    generate_delauney_edges(points);
 
     // Create the delauney triangles from the points
 
