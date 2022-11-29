@@ -120,13 +120,13 @@ void process_point(void)
 
 const int POINT_EDGE_MARGIN = 100;
 
-const int GRIDSIZE = 25;
+const int GRIDSIZE = 10;
 const float JITTER = 0.5;
 
 const float GRIDX_TO_SCREEN = SCREEN_WIDTH / GRIDSIZE;
 const float GRIDY_TO_SCREEN = SCREEN_HEIGHT / GRIDSIZE;
 
-Vector2 _points[GRIDSIZE * GRIDSIZE];
+Vector2 _points[8464];
 
 point_list_t points = {
     .items = _points,
@@ -148,7 +148,7 @@ void add_point_to_list(point_list_t *list, Vector2 point)
     list->count++;
 }
 
-void insert_point_to_grid(Vector2 **grid, int cellsize, Vector2 point)
+void insert_point_to_grid(int ncols, Vector2 grid[][ncols], int cellsize, Vector2 point)
 {
     int x = point.x / cellsize;
     int y = point.y / cellsize;
@@ -169,7 +169,7 @@ float dist(Vector2 p0, Vector2 p1)
     return sqrt(x * x + y * y);
 }
 
-bool is_point_valid(Vector2 **grid, int nrows, int ncols, int cellsize, Vector2 p, int r)
+bool is_point_valid(int nrows, int ncols, Vector2 grid[nrows][ncols], int cellsize, Vector2 p, int r)
 {
     if (p.x < 0 || p.x >= SCREEN_WIDTH || p.y < 0 || p.y >= SCREEN_HEIGHT)
     {
@@ -179,14 +179,14 @@ bool is_point_valid(Vector2 **grid, int nrows, int ncols, int cellsize, Vector2 
     int xindex = p.x / cellsize;
     int yindex = p.y / cellsize;
 
-    int y0 = max(yindex - 1, 0);
-    int y1 = min(yindex + 1, nrows);
+    int y0 = fmax(yindex - 1, 0);
+    int y1 = fmin(yindex + 1, nrows);
     int x0 = fmax(xindex - 1, 0);
     int x1 = fmin(xindex + 1, ncols);
 
-    for (int y = y0; y < y1; y++)
+    for (int y = y0; y <= y1; y++)
     {
-        for (int x = x0; x < x1; x++)
+        for (int x = x0; x <= x1; x++)
         {
             if (grid[y][x].x != -1 && grid[y][x].y != -1)
             {
@@ -235,7 +235,7 @@ void poisson_disk_sampling(int radius, int k, point_list_t *points)
         }
     }
 
-    insert_point_to_grid(grid, cellsize, p0);
+    insert_point_to_grid(grid_cols, grid, cellsize, p0);
     add_point_to_list(points, p0);
     add_point_to_list(&active, p0);
 
@@ -257,10 +257,10 @@ void poisson_disk_sampling(int radius, int k, point_list_t *points)
                 .y = p.y + r * sin(theta),
             };
 
-            if (is_point_valid(grid, grid_rows, grid_cols, cellsize, new_p, radius))
+            if (is_point_valid(grid_rows, grid_cols, grid, cellsize, new_p, radius))
             {
                 add_point_to_list(points, new_p);
-                insert_point_to_grid(grid, cellsize, new_p);
+                insert_point_to_grid(grid_cols, grid, cellsize, new_p);
                 add_point_to_list(&active, new_p);
                 found = true;
                 break;
@@ -276,17 +276,19 @@ void poisson_disk_sampling(int radius, int k, point_list_t *points)
 
 void generate_map(void)
 {
-    // Spawns random points on the map
-    for (int y = 0; y < GRIDSIZE; y++)
-    {
-        for (int x = 0; x < GRIDSIZE; x++)
-        {
-            _points[y * GRIDSIZE + x] = (Vector2){
-                .x = (x + (JITTER * (((rand() % 2000) - 1000.0) / 1000.0))) * GRIDX_TO_SCREEN,
-                .y = (y + (JITTER * (((rand() % 2000) - 1000.0) / 1000.0))) * GRIDY_TO_SCREEN,
-            };
-        }
-    }
+    // // Spawns random points on the map
+    // for (int y = 0; y < GRIDSIZE; y++)
+    // {
+    //     for (int x = 0; x < GRIDSIZE; x++)
+    //     {
+    //         add_point_to_list(&points, (Vector2){
+    //                                        .x = (x + (JITTER * (((rand() % 2000) - 1000.0) / 1000.0))) * GRIDX_TO_SCREEN,
+    //                                        .y = (y + (JITTER * (((rand() % 2000) - 1000.0) / 1000.0))) * GRIDY_TO_SCREEN,
+    //                                    });
+    //     }
+    // }
+
+    poisson_disk_sampling(150, 30, &points);
 
     // for (int i = 0; i < points_count - 1; i++)
     // {
