@@ -316,3 +316,20 @@ void draw_map(void)
         }
     }
 }
+
+void draw_highlighted_city()
+{
+    Vector2 mouse_pos = GetMousePosition();
+
+    int closest_city_index = 0;
+
+    for (int i = 0; i < points.count; i++)
+    {
+        if (dist(mouse_pos, points.items[i]) < dist(mouse_pos, points.items[closest_city_index]))
+        {
+            closest_city_index = i;
+        }
+    }
+
+    DrawCircleV(points.items[closest_city_index], 20, GRAY);
+}

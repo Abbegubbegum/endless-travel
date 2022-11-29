@@ -240,6 +240,8 @@ int main(void)
             ClearBackground(WHITE);
 
             draw_map();
+
+            draw_highlighted_city();
             EndDrawing();
         }
         break;
