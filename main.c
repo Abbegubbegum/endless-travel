@@ -7,6 +7,7 @@
 #include "types.c"
 #include "globals.c"
 #include "utils.c"
+#include "geometry.c"
 #include "delauney.c"
 #include "map.c"
 #include "wfc.c"

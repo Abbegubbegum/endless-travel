@@ -34,6 +34,12 @@ typedef struct
 
 typedef struct
 {
+    Vector2 pos;
+    float rsquared;
+} circle_t;
+
+typedef struct
+{
     int left;
     int right;
     int top;

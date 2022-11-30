@@ -4,6 +4,11 @@ bool v_eq_v(Vector2 v1, Vector2 v2)
     return (v1.x == v2.x && v1.y == v2.y);
 };
 
+float angle(Vector2 p1, Vector2 p2)
+{
+    return atan2f(p2.y - p1.y, p2.x - p1.x);
+}
+
 // CONVERSION FUNCTIONS //////////////////////////////////////////////////////////
 int city_coord2index(int x, int y)
 {
