@@ -3,6 +3,7 @@
 int hull_counter = 0;
 
 // OBS: REMEMBER TO FREE THE NODE LIST ITEMS POINTER
+// Creates a new hull from a point list and assigns the hull ids
 point_node_list_t point_list2node_list(point_list_t points)
 {
     point_node_list_t list = {
@@ -24,6 +25,7 @@ point_node_list_t point_list2node_list(point_list_t points)
     return list;
 }
 
+// Find the index of the neighbor of base matching *target*'s position, returns -1 if not found
 int find_neighbor_index(point_node_t target, point_node_t base)
 {
     for (int i = 0; i < base.neighbor_count; i++)
@@ -37,6 +39,13 @@ int find_neighbor_index(point_node_t target, point_node_t base)
     return -1;
 }
 
+/**
+ * @brief Finds the index of the neighbor of base which has a bigger angle, relative to base, than a
+ *
+ * @param base The node in which to search for the neighbor in
+ * @param a The angle that should be compared with
+ * @return The index of the neighbor that has a bigger angle, otherwise the last index as none has a bigger angle
+ */
 int find_neighbor_index_with_bigger_angle(point_node_t base, float a)
 {
     for (int i = 0; i < base.neighbor_count; i++)
@@ -50,20 +59,26 @@ int find_neighbor_index_with_bigger_angle(point_node_t base, float a)
     return base.neighbor_count - 1;
 }
 
-// Returns the next ctr_clockwise neighbor to point target from point base
-point_node_t *ctr_clockwise(point_node_t end, point_node_t start)
+/**
+ * @brief Returns the next node connected to the base_node, starting with the start_node and moving clockwise around the base node, which is also part of the same hull as start_node
+ *
+ * @param start_node The node to start the search at
+ * @param base_node The node which neighbors should be searched
+ * @return A pointer to the resulting node
+ */
+point_node_t *ctr_clockwise(point_node_t start_node, point_node_t base_node)
 {
-    int base_index = find_neighbor_index(end, start);
+    int start_index = find_neighbor_index(start_node, base_node);
 
-    int index = base_index;
+    int index = start_index;
 
     point_node_t *node;
 
     while (true)
     {
-        index = (index + 1) % start.neighbor_count;
-        node = start.neighbors[index];
-        if (index == base_index || start.hull_id == node->hull_id)
+        index = (index + 1) % base_node.neighbor_count;
+        node = base_node.neighbors[index];
+        if (index == start_index || start_node.hull_id == node->hull_id)
         {
             return node;
         }
@@ -72,54 +87,72 @@ point_node_t *ctr_clockwise(point_node_t end, point_node_t start)
     return node;
 }
 
-void add_neighbor_to_node(point_node_t *to_add, point_node_t *base, bool set_first)
+/**
+ * @brief Adds the given node to the base nodes list of neighbors and places it in the right spot, according to the angle relative to the base node
+ *
+ * @param node_to_add The node to add
+ * @param base_node The node that will receive the other node
+ * @param should_set_first Sets if the new node should be set as the first node connected on the base node
+ */
+void add_neighbor_to_node(point_node_t *node_to_add, point_node_t *base_node, bool should_set_first)
 {
-    float a = angle(base->pos, to_add->pos);
+    float a = angle(base_node->pos, node_to_add->pos);
 
-    int prior_index = find_neighbor_index_with_bigger_angle(*base, a);
+    int prior_index = find_neighbor_index_with_bigger_angle(*base_node, a);
 
-    for (int i = base->neighbor_count; i > prior_index + 1; i--)
+    for (int i = base_node->neighbor_count; i > prior_index + 1; i--)
     {
-        base->neighbors[i] = base->neighbors[i - 1];
+        base_node->neighbors[i] = base_node->neighbors[i - 1];
     }
 
-    base->neighbors[prior_index + 1] = to_add;
-    base->neighbor_count++;
+    base_node->neighbors[prior_index + 1] = node_to_add;
+    base_node->neighbor_count++;
 
-    if (base->first == NULL || set_first)
+    if (base_node->first == NULL || should_set_first)
     {
-        base->first = to_add;
+        base_node->first = node_to_add;
     }
 }
 
-void remove_neighbor_from_node(point_node_t *to_remove, point_node_t *base)
+/**
+ * @brief Removes the given node from the base nodes list of neighbors, and changes the base nodes first node accordingly
+ *
+ * @param node_to_remove The node to remove
+ * @param base_node The node that will the other node will be removed from
+ */
+void remove_neighbor_from_node(point_node_t *node_to_remove, point_node_t *base_node)
 {
-    if (base->first == to_remove)
+    if (base_node->first == node_to_remove)
     {
-        base->first = ctr_clockwise(*base->first, *base);
+        base_node->first = ctr_clockwise(*base_node->first, *base_node);
     }
-    if (base->first == to_remove)
+    if (base_node->first == node_to_remove)
     {
-        base->first = NULL;
+        base_node->first = NULL;
     }
 
     bool should_swap = false;
 
-    for (int i = 0; i < base->neighbor_count; i++)
+    for (int i = base_node->neighbor_count; i < 0; i++)
     {
         if (should_swap)
         {
-            base->neighbors[i - 1] = base->neighbors[i];
+            base_node->neighbors[i - 1] = base_node->neighbors[i];
         }
-        else if (base->neighbors[i] == to_remove)
+        else if (base_node->neighbors[i] == node_to_remove)
         {
             should_swap = true;
         }
     }
 
-    base->neighbor_count--;
+    base_node->neighbor_count--;
 }
 
+/**
+ * @brief Sorts the given list of nodes by their positions x value in ascending order, i.e from left to right
+ *
+ * @param points The list of nodes to be sorted
+ */
 void sort_points(point_node_list_t *points)
 {
     // BUBBLE SORT
@@ -156,49 +189,66 @@ float cross(Vector2 s, Vector2 o, Vector2 p)
     return ((p.x - o.x) * (s.y - o.y) - (p.y - o.y) * (s.x - o.x));
 }
 
-// Returns the next clockwise neighbor to point target from point base
-point_node_t *clockwise(point_node_t end, point_node_t start)
+/**
+ * @brief Returns the next node connected to the base_node, starting with the start_node and moving clockwise around the base node, which is also part of the same hull as start_node
+ *
+ * @param start_node The node to start the search at
+ * @param base_node The node which neighbors should be searched
+ * @return A pointer to the resulting node
+ */
+point_node_t *clockwise(point_node_t start_node, point_node_t base_node)
 {
-    int base_index = find_neighbor_index(end, start);
+    int start_index = find_neighbor_index(start_node, base_node);
 
-    int index = base_index;
+    int index = start_index;
 
     point_node_t *node;
 
     while (true)
     {
-        index = ((index - 1) + start.neighbor_count) % start.neighbor_count;
-        node = start.neighbors[index];
-        if (index == base_index || start.hull_id == node->hull_id)
+        index = ((index - 1) + base_node.neighbor_count) % base_node.neighbor_count;
+        node = base_node.neighbors[index];
+        if (index == start_index || base_node.hull_id == node->hull_id)
         {
             return node;
         }
     }
 }
 
-bool is_point_in_point_list(point_node_t p, point_node_list_t list)
-{
-    for (int i = 0; i < list.count; i++)
-    {
-        if (v_eq_v(p.pos, list.items[i].pos))
-        {
-            return true;
-        }
-    }
-
-    return false;
-}
-
+/**
+ * @brief Checks if the given node is to the right of the vector p1->p2
+ *
+ * @param target The node to check
+ * @param p1 The source point of the vector
+ * @param p2 The end point of the vector
+ * @return true if the node is to the right of the vector p1->p2, and false otherwise
+ */
 bool is_right_of(point_node_t target, point_node_t p1, point_node_t p2)
 {
     return cross(target.pos, p1.pos, p2.pos) < 0;
 }
 
+/**
+ * @brief Checks if the given node is to the left of the vector p1->p2
+ *
+ * @param target The node to check
+ * @param p1 The source point of the vector
+ * @param p2 The end point of the vector
+ * @return true if the node is to the left of the vector p1->p2, and false otherwise
+ */
 bool is_left_of(point_node_t target, point_node_t p1, point_node_t p2)
 {
     return cross(target.pos, p1.pos, p2.pos) > 0;
 }
 
+/**
+ * @brief Creates a new node list from the original node list, inheriting from the indices given. Also creates a new hull and assigns all nodes to that hull id
+ *
+ * @param origin The list that the new list will inherit from
+ * @param start The start index from where the new list will begin
+ * @param end The end index from where the new list will stop
+ * @return The newly created node list
+ */
 point_node_list_t get_subarray(point_node_list_t origin, int start, int end)
 {
     point_node_list_t list = (point_node_list_t){
@@ -217,21 +267,29 @@ point_node_list_t get_subarray(point_node_list_t origin, int start, int end)
     return list;
 }
 
-void get_tangents(point_node_list_t left, point_node_list_t right, point_node_t **lower, point_node_t **upper)
+/**
+ * @brief Finds the two most lower nodes of both lists, and the two most upper nodes of both lists
+ *
+ * @param left_node_list The leftmost node list to search
+ * @param right_node_list The rightmost node list to search
+ * @param lower_pair The array that will contain the pair of the two most lower nodes of the two lists
+ * @param upper_pair The array that will contain the pair of the two most upper nodes of the two lists
+ */
+void get_limit_nodes(point_node_list_t left_node_list, point_node_list_t right_node_list, point_node_t **lower_pair, point_node_t **upper_pair)
 {
-    int max_count = left.count + right.count;
+    int max_count = left_node_list.count + right_node_list.count;
 
-    // Get rightmost node in left
-    point_node_t *x = &left.items[left.count - 1];
+    // Get rightmost node in left_node_list
+    point_node_t *x = &left_node_list.items[left_node_list.count - 1];
 
-    // Get leftmost node in right
-    point_node_t *y = &right.items[0];
+    // Get leftmost node in right_node_list
+    point_node_t *y = &right_node_list.items[0];
 
     // Get first node connected to y
-    point_node_t *z = y->neighbors[0];
+    point_node_t *z = y->first;
 
     // Get first node connected to x
-    point_node_t *z1 = x->neighbors[0];
+    point_node_t *z1 = x->first;
 
     point_node_t *z2 = clockwise(*z1, *x);
 
@@ -252,25 +310,25 @@ void get_tangents(point_node_list_t left, point_node_list_t right, point_node_t 
         }
         else
         {
-            lower[0] = x;
-            lower[1] = y;
+            lower_pair[0] = x;
+            lower_pair[1] = y;
             break;
         }
     }
 
-    // Get the rightmost node in left
-    x = &left.items[left.count - 1];
+    // Get the rightmost node in left_node_list
+    x = &left_node_list.items[left_node_list.count - 1];
 
-    // Get the leftmost node in right
-    y = &right.items[0];
+    // Get the leftmost node in right_node_list
+    y = &right_node_list.items[0];
 
     // Get first node connected to y
-    z = y->neighbors[0];
+    z = y->first;
 
     z1 = clockwise(*z, *y);
 
     // Get first node connected to x
-    z2 = x->neighbors[0];
+    z2 = x->first;
 
     // Walk ctr_clockwise around left list and clockwise around right list until we found the highest connection x->y
     for (int i = 0; i < max_count; i++)
@@ -289,19 +347,27 @@ void get_tangents(point_node_list_t left, point_node_list_t right, point_node_t 
         }
         else
         {
-            upper[0] = x;
-            upper[1] = y;
+            upper_pair[0] = x;
+            upper_pair[1] = y;
             break;
         }
     }
 }
 
+/**
+ * @brief Joins the two given nodes together, adding them both to eachother as neighbors
+ *
+ * @param p1 The first node that will be joined
+ * @param p2 The second node that will be joined
+ * @param set_first Sets if node p1 should have their first connected node be set to the newly added node
+ */
 void join(point_node_t *p1, point_node_t *p2, bool set_first)
 {
     add_neighbor_to_node(p2, p1, set_first);
     add_neighbor_to_node(p1, p2, false);
 }
 
+// Unjoins the two given nodes together, removing them from eachother as neighbors
 void unjoin(point_node_t *p1, point_node_t *p2)
 {
     remove_neighbor_from_node(p2, p1);
@@ -325,7 +391,14 @@ bool outside(point_node_t p1, point_node_t p2, point_node_t p3, point_node_t q)
     return dsquared >= c.rsquared;
 }
 
-point_node_list_t add_hull(point_node_list_t left, point_node_list_t right)
+/**
+ * @brief Joins the two node lists into one, with the left hulls id becoming the new id
+ *
+ * @param left The leftmost hull that will be joined by the rightmost hull
+ * @param right The rightmost hull that will be joined into the left most hull
+ * @return A new node list that will contain both the left and right hulls
+ */
+point_node_list_t add_hulls_together(point_node_list_t left, point_node_list_t right)
 {
     for (int i = 0; i < right.count; i++)
     {
@@ -339,99 +412,143 @@ point_node_list_t add_hull(point_node_list_t left, point_node_list_t right)
     };
 }
 
+/**
+ * @brief Merges two hulls together, making connections inbetween their nodes
+ *
+ * @param left The leftmost hull that will be merged
+ * @param right The rightmost hull that will be merged
+ * @return A new hull that will be a merge between the other two hulls
+ */
 point_node_list_t merge(point_node_list_t left, point_node_list_t right)
 {
     point_node_t *lower[2];
     point_node_t *upper[2];
-    get_tangents(left, right, lower, upper);
+    get_limit_nodes(left, right, lower, upper);
 
+    // The lowest nodes in each list, left and right
     point_node_t *lower_left = lower[0];
     point_node_t *lower_right = lower[1];
 
+    // The highest nodes in each list, left and right
     point_node_t *upper_left = upper[0];
     point_node_t *upper_right = upper[1];
 
-    point_node_t *l = lower_left;
-    point_node_t *r = lower_right;
+    // THE NODES THAT SHOULD BE CONNECTED TOGETHER
+    // Sets the nodes that should connect to start at the lowest nodes
+    point_node_t *left_current = lower_left;
+    point_node_t *right_current = lower_right;
 
-    point_node_t *l1 = NULL;
-    point_node_t *r1 = NULL;
-    point_node_t *l2 = NULL;
-    point_node_t *r2 = NULL;
+    // Other nodes spots
+    point_node_t *first_ctr_clockwise_left = NULL;
+    point_node_t *first_clockwise_right = NULL;
+    point_node_t *second_ctr_clockwise_left = NULL;
+    point_node_t *second_clockwise_right = NULL;
 
-    while (!v_eq_v(l->pos, upper_left->pos) || !v_eq_v(r->pos, upper_right->pos))
+    // While the nodes that are/will be connected are not the highest node pair
+    while (!v_eq_v(left_current->pos, upper_left->pos) || !v_eq_v(right_current->pos, upper_right->pos))
     {
         bool a = false;
         bool b = false;
 
-        join(l, r, v_eq_v(l->pos, lower_left->pos) && v_eq_v(r->pos, lower_right->pos));
+        // Join the two nodes to be connected
+        // If they are the lowest node pair, sets the left_current's first node to right_current
+        join(left_current, right_current, v_eq_v(left_current->pos, lower_left->pos) && v_eq_v(right_current->pos, lower_right->pos));
 
-        r1 = clockwise(*l, *r);
+        // Get the next node connected to the right node, that is clockwise of the left node,
+        first_clockwise_right = clockwise(*left_current, *right_current);
 
-        if (is_left_of(*r1, *l, *r))
+        // If the new node is to the left of the current node pair
+        if (is_left_of(*first_clockwise_right, *left_current, *right_current))
         {
-            r2 = clockwise(*r1, *r);
+            // Gets the next node connected to the right node, that is clockwise of the first clockwise
+            second_clockwise_right = clockwise(*first_clockwise_right, *right_current);
 
-            while (!outside(*r1, *l, *r, *r2))
+            // While the second clockwise node is inside the circumcircle of the current node pair and the first clockwise node
+            // Keep moving clockwise while unjoining the "leftmost" clockwise node with the current right node
+            while (!outside(*first_clockwise_right, *left_current, *right_current, *second_clockwise_right))
             {
-                unjoin(r, r1);
-                r1 = r2;
-                r2 = clockwise(*r1, *r);
+                unjoin(right_current, first_clockwise_right);
+                first_clockwise_right = second_clockwise_right;
+                second_clockwise_right = clockwise(*first_clockwise_right, *right_current);
             }
         }
+        // If the next clockwise node on the right hull is to the right of the current node pair, it is invalid
         else
         {
+            // Sets that the left counter clockwise node thing should be the node to be connected to next
             a = true;
         }
 
-        l1 = ctr_clockwise(*r, *l);
+        // DOES THE SAME PROCEDURE WITH LEFT BUT REVERSED
+        // CTR_CLOCKWISE INSTEAD OF CLOCKWISE AND TO THE RIGHT OF INSTEAD OF LEFT OF
 
-        if (is_right_of(*l1, *r, *l))
+        // Get the next node connected to the left node, that is counter_clockwise of the right node
+        first_ctr_clockwise_left = ctr_clockwise(*right_current, *left_current);
+
+        // If the next counter clockwise node is to the right of the current node pair
+        if (is_right_of(*first_ctr_clockwise_left, *right_current, *left_current))
         {
-            l2 = ctr_clockwise(*l1, *l);
+            // Gets the next counter clockwise node from the first counter clockwise node, connected to the left node,
+            second_ctr_clockwise_left = ctr_clockwise(*first_ctr_clockwise_left, *left_current);
 
-            while (!outside(*l, *r, *l1, *l2))
+            // While the second counter clockwise node is inside the circumcircle of the current node pair and the first coumter clockwise node
+            // Keep moving counter clockwise while unjoining the "rightmost" counter clockwise node with the current left node
+            while (!outside(*left_current, *right_current, *first_ctr_clockwise_left, *second_ctr_clockwise_left))
             {
-                unjoin(l, l1);
-                l1 = l2;
-                l2 = ctr_clockwise(*l1, *l);
+                unjoin(left_current, first_ctr_clockwise_left);
+                first_ctr_clockwise_left = second_ctr_clockwise_left;
+                second_ctr_clockwise_left = ctr_clockwise(*first_ctr_clockwise_left, *left_current);
             }
         }
+        // If the next counter clockwise node on the left hull is to the left of the current node pair, it is invalid
         else
         {
+            // Sets that the right clockwise node should be the node to be connected to next
             b = true;
         }
 
+        // If the first clockwise node on the right hull was to the right of the current node pair, connect the left side before the right
         if (a)
         {
-            l = l1;
+            left_current = first_ctr_clockwise_left;
         }
+        // If the first counter clockwise node on the left hull was to the left of the current node pair, connect the right side before the left
         else if (b)
         {
-            r = r1;
+            right_current = first_clockwise_right;
         }
-        else if (outside(*l, *r, *r1, *l1))
+        // If the left choice is outside the circumcircle of the current node pair and the right choice, connect the right side before the left
+        else if (outside(*left_current, *right_current, *first_clockwise_right, *first_ctr_clockwise_left))
         {
-            r = r1;
+
+            right_current = first_clockwise_right;
         }
+        // If the left choice is inside the circumcircle of the current node pair and the right choice, connect the left side before the right
         else
         {
-            l = l1;
+            left_current = first_ctr_clockwise_left;
         }
     }
 
+    // When finished, connect last two nodes which are also the two most upper nodes
     join(upper_right, upper_left, true);
 
-    return add_hull(left, right);
+    // Combine the two hulls into one
+    return add_hulls_together(left, right);
 }
 
+/**
+ * @brief Connectes a unconnected list of points into a hull with delauney triangles
+ *
+ * @param points A list of unconnected points to be connected
+ */
 void triangulate(point_node_list_t *points)
 {
     switch (points->count)
     {
+    // If there are two points,
     case 2:
-        add_neighbor_to_node(&points->items[1], &points->items[0], false);
-        add_neighbor_to_node(&points->items[0], &points->items[1], false);
+        join(&points->items[0], &points->items[1]);
         break;
     case 3:
     {
@@ -481,13 +598,16 @@ void triangulate(point_node_list_t *points)
     {
         int left_count = points->count / 2;
 
+        // Split the node list into two halves on the x axis
         point_node_list_t left = get_subarray(*points, 0, left_count);
         point_node_list_t right = get_subarray(*points, left_count, points->count);
 
+        // Triangulate each halve seperately
         triangulate(&left);
         triangulate(&right);
 
-        merge(left, right);
+        // Set the node list to the merge of the two triangulated halves
+        *points = merge(left, right);
     }
     }
 }
