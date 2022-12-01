@@ -1,3 +1,5 @@
+#include "common.h"
+
 // Vector Functions
 bool v_eq_v(Vector2 v1, Vector2 v2)
 {

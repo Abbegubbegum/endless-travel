@@ -1,3 +1,5 @@
+#include "common.h"
+
 typedef enum
 {
     C_TTYPE_NONE,

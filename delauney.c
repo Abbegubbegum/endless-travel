@@ -1,3 +1,5 @@
+#include "common.h"
+
 int hull_counter = 0;
 
 // OBS: REMEMBER TO FREE THE NODE LIST ITEMS POINTER
@@ -49,18 +51,22 @@ int find_neighbor_index_with_bigger_angle(point_node_t base, float a)
 }
 
 // Returns the next ctr_clockwise neighbor to point target from point base
-point_node_t *ctr_clockwise(point_node_t target, point_node_t base)
+point_node_t *ctr_clockwise(point_node_t end, point_node_t start)
 {
-    int base_index = find_neighbor_index(target, base);
+    int base_index = find_neighbor_index(end, start);
 
     int index = base_index;
 
     point_node_t *node;
 
-    while (index != base_index) // && base.hull != node.hull
+    while (true)
     {
-        index = (index + 1) % base.neighbor_count;
-        node = base.neighbors[index];
+        index = (index + 1) % start.neighbor_count;
+        node = start.neighbors[index];
+        if (index == base_index || start.hull_id == node->hull_id)
+        {
+            return node;
+        }
     }
 
     return node;
@@ -71,8 +77,6 @@ void add_neighbor_to_node(point_node_t *to_add, point_node_t *base, bool set_fir
     float a = angle(base->pos, to_add->pos);
 
     int prior_index = find_neighbor_index_with_bigger_angle(*base, a);
-
-    printf("%d\n", prior_index);
 
     for (int i = base->neighbor_count; i > prior_index + 1; i--)
     {
@@ -153,21 +157,23 @@ float cross(Vector2 s, Vector2 o, Vector2 p)
 }
 
 // Returns the next clockwise neighbor to point target from point base
-point_node_t *clockwise(point_node_t target, point_node_t base)
+point_node_t *clockwise(point_node_t end, point_node_t start)
 {
-    int base_index = find_neighbor_index(target, base);
+    int base_index = find_neighbor_index(end, start);
 
     int index = base_index;
 
     point_node_t *node;
 
-    while (index != base_index) // && base.hull != node.hull
+    while (true)
     {
-        index = ((index - 1) + base.neighbor_count) % base.neighbor_count;
-        node = base.neighbors[index];
+        index = ((index - 1) + start.neighbor_count) % start.neighbor_count;
+        node = start.neighbors[index];
+        if (index == base_index || start.hull_id == node->hull_id)
+        {
+            return node;
+        }
     }
-
-    return node;
 }
 
 bool is_point_in_point_list(point_node_t p, point_node_list_t list)
@@ -346,12 +352,12 @@ point_node_list_t merge(point_node_list_t left, point_node_list_t right)
     point_node_t *upper_right = upper[1];
 
     point_node_t *l = lower_left;
-    point_node_t *r = upper_right;
+    point_node_t *r = lower_right;
 
-    point_node_t *l1;
-    point_node_t *r1;
-    point_node_t *l2;
-    point_node_t *r2;
+    point_node_t *l1 = NULL;
+    point_node_t *r1 = NULL;
+    point_node_t *l2 = NULL;
+    point_node_t *r2 = NULL;
 
     while (!v_eq_v(l->pos, upper_left->pos) || !v_eq_v(r->pos, upper_right->pos))
     {
@@ -452,11 +458,11 @@ void triangulate(point_node_list_t *points)
             // p2 is left of p1->p3, therefore p2 is top of triangle
             add_neighbor_to_node(p3, p1, false);
             add_neighbor_to_node(p2, p3, false);
-            add_neighbor_to_node(p3, p2, false);
-
-            add_neighbor_to_node(p3, p1, false);
-            add_neighbor_to_node(p2, p3, false);
             add_neighbor_to_node(p1, p2, false);
+
+            add_neighbor_to_node(p2, p1, false);
+            add_neighbor_to_node(p3, p2, false);
+            add_neighbor_to_node(p1, p3, false);
         }
         else
         {
@@ -473,7 +479,7 @@ void triangulate(point_node_list_t *points)
     // > 3
     default:
     {
-        int left_count = 3;
+        int left_count = points->count / 2;
 
         point_node_list_t left = get_subarray(*points, 0, left_count);
         point_node_list_t right = get_subarray(*points, left_count, points->count);
@@ -519,22 +525,40 @@ point_node_list_t generate_delauney_edges(point_list_t points)
         },
     };
 
-    point_node_t *n = calloc(4, sizeof(point_node_t));
+    point_node_t n5 = {
+        .pos = {
+            .x = 900,
+            .y = 900,
+        },
+    };
+
+    point_node_t n6 = {
+        .pos = {
+            .x = 400,
+            .y = 900,
+        },
+    };
+
+    point_node_t *n = calloc(6, sizeof(point_node_t));
 
     n[0] = n1;
     n[1] = n2;
     n[2] = n3;
     n[3] = n4;
+    n[4] = n5;
+    n[5] = n6;
 
     point_node_list_t nodes = {
         .items = n,
-        .count = 4,
+        .count = 6,
         .hull_id = 0,
     };
 
     hull_counter++;
 
     sort_points(&nodes);
+
+    printf("%f, %f\n", nodes.items[2].pos.x, nodes.items[2].pos.y);
 
     triangulate(&nodes);
 

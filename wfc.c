@@ -1,3 +1,5 @@
+#include "common.h"
+
 typedef struct
 {
     wfc_tile_t *road_options[16];

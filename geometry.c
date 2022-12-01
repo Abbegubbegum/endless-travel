@@ -1,3 +1,5 @@
+#include "common.h"
+
 typedef struct
 {
     float a;
