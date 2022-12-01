@@ -277,5 +277,7 @@ int main(void)
 
     CloseWindow();
 
+    free(delauney_nodes.items);
+
     return 0;
 }

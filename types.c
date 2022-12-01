@@ -38,6 +38,22 @@ typedef struct
     float rsquared;
 } circle_t;
 
+typedef struct point_node_t
+{
+    Vector2 pos;
+    struct point_node_t *neighbors[16];
+    struct point_node_t *first;
+    int neighbor_count;
+    int hull_id;
+} point_node_t;
+
+typedef struct
+{
+    point_node_t *items;
+    int count;
+    int hull_id;
+} point_node_list_t;
+
 typedef struct
 {
     int left;

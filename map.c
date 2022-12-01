@@ -128,6 +128,8 @@ point_list_t points = {
 edge_t edges[264];
 int edge_count = 0;
 
+point_node_list_t delauney_nodes = {0};
+
 void add_point_to_list(point_list_t *list, Vector2 point)
 {
     list->items[list->count] = point;
@@ -329,10 +331,9 @@ void generate_map(void)
 {
     // Generate the points using poisson disk sampling distribution algorithm
     poisson_disk_sampling(150, 30, &points);
+    // lazy_edge_generation();
 
-    lazy_edge_generation();
-
-    generate_delauney_edges(points);
+    delauney_nodes = generate_delauney_edges(points);
 
     // Create the delauney triangles from the points
 
@@ -344,14 +345,27 @@ void draw_map(void)
 {
     for (int i = 0; i < points.count; i++)
     {
-        DrawCircleV(points.items[i], 5, BLACK);
+        // DrawCircleV(points.items[i], 5, BLACK);
     }
 
     for (int i = 0; i < edge_count; i++)
     {
-        DrawLineV(edges[i].p0, edges[i].p1, BLACK);
+        // DrawLineV(edges[i].p0, edges[i].p1, BLACK);
 
         // DrawLineV(get_point_on_line(-10, mid_point, opposite_k), get_point_on_line(SCREEN_WIDTH + 10, mid_point, opposite_k), GREEN);
+    }
+
+    for (int i = 0; i < delauney_nodes.count; i++)
+    {
+        point_node_t node = delauney_nodes.items[i];
+
+        DrawCircleV(node.pos, 5, BLACK);
+
+        for (int j = 0; j < node.neighbor_count; j++)
+        {
+            point_node_t neighbor = *node.neighbors[j];
+            DrawLineV(node.pos, neighbor.pos, BLACK);
+        }
     }
 }
 
@@ -363,17 +377,17 @@ void draw_highlighted_city()
 
     float closest_distance = SCREEN_HEIGHT * SCREEN_WIDTH;
 
-    for (int i = 0; i < points.count; i++)
+    for (int i = 0; i < delauney_nodes.count; i++)
     {
-        if (dist(mouse_pos, points.items[i]) < closest_distance)
+        if (dist(mouse_pos, delauney_nodes.items[i].pos) < closest_distance)
         {
             closest_city_index = i;
-            closest_distance = dist(mouse_pos, points.items[i]);
+            closest_distance = dist(mouse_pos, delauney_nodes.items[i].pos);
         }
     }
 
     if (closest_distance < HIGHLIGHT_RADIUS)
     {
-        DrawCircleV(points.items[closest_city_index], 20, GRAY);
+        DrawCircleV(delauney_nodes.items[closest_city_index].pos, 20, GRAY);
     }
 }
