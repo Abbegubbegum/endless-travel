@@ -548,7 +548,7 @@ void triangulate(point_node_list_t *points)
     {
     // If there are two points,
     case 2:
-        join(&points->items[0], &points->items[1]);
+        join(&points->items[0], &points->items[1], false);
         break;
     case 3:
     {
