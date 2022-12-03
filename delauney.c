@@ -184,9 +184,10 @@ void sort_points(point_node_list_t *points)
 
 // Returns the 2D cross product between the two vectors o->p and o->s
 // Calculates the cross multiplication, p0.x * p1.y - p0.y * p1.x
-float cross(Vector2 s, Vector2 o, Vector2 p)
+double cross(Vector2 s, Vector2 o, Vector2 p)
 {
-    return ((p.x - o.x) * (s.y - o.y) - (p.y - o.y) * (s.x - o.x));
+    // return ((p.x - o.x) * (s.y - o.y) - (p.y - o.y) * (s.x - o.x));
+    return ((p.x - o.x) * (s.y - o.y)) - ((p.y - o.y) * (s.x - o.x));
 }
 
 /**
@@ -225,7 +226,7 @@ point_node_t *clockwise(point_node_t start_node, point_node_t base_node)
  */
 bool is_right_of(point_node_t target, point_node_t p1, point_node_t p2)
 {
-    return cross(target.pos, p1.pos, p2.pos) < 0;
+    return cross(target.pos, p1.pos, p2.pos) > 0;
 }
 
 /**
@@ -238,7 +239,7 @@ bool is_right_of(point_node_t target, point_node_t p1, point_node_t p2)
  */
 bool is_left_of(point_node_t target, point_node_t p1, point_node_t p2)
 {
-    return cross(target.pos, p1.pos, p2.pos) > 0;
+    return cross(target.pos, p1.pos, p2.pos) < 0;
 }
 
 /**
@@ -556,10 +557,10 @@ void triangulate(point_node_list_t *points)
         point_node_t *p2 = &points->items[1];
         point_node_t *p3 = &points->items[2];
 
-        float cross_result = cross(p2->pos, p1->pos, p3->pos);
+        double cross_result = cross(p2->pos, p1->pos, p3->pos);
 
         // Connect the points in counterclockwise direction
-        if (cross_result < 0)
+        if (cross_result > 0)
         {
             // p2 is right of p1->p3, therefore p2 is bottom of triangle
             add_neighbor_to_node(p2, p1, false);
@@ -570,7 +571,7 @@ void triangulate(point_node_list_t *points)
             add_neighbor_to_node(p1, p2, false);
             add_neighbor_to_node(p3, p1, false);
         }
-        else if (cross_result > 0)
+        else if (cross_result < 0)
         {
             // p2 is left of p1->p3, therefore p2 is top of triangle
             add_neighbor_to_node(p3, p1, false);
@@ -619,60 +620,56 @@ point_node_list_t generate_delauney_edges(point_list_t points)
 
     point_node_t n1 = {
         .pos = {
-            .x = 10,
-            .y = 10,
+            .x = 300,
+            .y = 100,
         },
     };
 
     point_node_t n2 = {
         .pos = {
-            .x = 300,
-            .y = 300,
+            .x = 100,
+            .y = 500,
         },
     };
 
     point_node_t n3 = {
         .pos = {
             .x = 500,
-            .y = 100,
+            .y = 1000,
         },
     };
 
     point_node_t n4 = {
         .pos = {
             .x = 600,
-            .y = 600,
+            .y = 100,
         },
     };
 
     point_node_t n5 = {
         .pos = {
-            .x = 900,
-            .y = 900,
+            .x = 1000,
+            .y = 300,
         },
     };
 
-    point_node_t n6 = {
-        .pos = {
-            .x = 400,
-            .y = 900,
-        },
-    };
-
-    point_node_t *n = calloc(6, sizeof(point_node_t));
+    point_node_t *n = calloc(5, sizeof(point_node_t));
 
     n[0] = n1;
     n[1] = n2;
     n[2] = n3;
     n[3] = n4;
     n[4] = n5;
-    n[5] = n6;
 
     point_node_list_t nodes = {
         .items = n,
-        .count = 6,
+        .count = 5,
         .hull_id = 0,
     };
+
+    double a = cross((Vector2){.x = 700, .y = 600}, (Vector2){500, 500}, (Vector2){1000, 500});
+
+    double b = cross((Vector2){.x = 700, .y = 400}, (Vector2){500, 500}, (Vector2){1000, 500});
 
     hull_counter++;
 
