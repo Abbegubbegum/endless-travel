@@ -226,7 +226,7 @@ point_node_t *clockwise(point_node_t start_node, point_node_t base_node)
  */
 bool is_right_of(point_node_t target, point_node_t p1, point_node_t p2)
 {
-    return cross(target.pos, p1.pos, p2.pos) > 0;
+    return cross(target.pos, p1.pos, p2.pos) < 0;
 }
 
 /**
@@ -239,7 +239,7 @@ bool is_right_of(point_node_t target, point_node_t p1, point_node_t p2)
  */
 bool is_left_of(point_node_t target, point_node_t p1, point_node_t p2)
 {
-    return cross(target.pos, p1.pos, p2.pos) < 0;
+    return cross(target.pos, p1.pos, p2.pos) > 0;
 }
 
 /**
