@@ -78,7 +78,7 @@ point_node_t *ctr_clockwise(point_node_t start_node, point_node_t base_node)
     {
         index = (index + 1) % base_node.neighbor_count;
         node = base_node.neighbors[index];
-        if (index == start_index || start_node.hull_id == node->hull_id)
+        if (index == start_index || base_node.hull_id == node->hull_id)
         {
             return node;
         }
@@ -171,7 +171,7 @@ void sort_points(point_node_list_t *points)
                 points->items[i + 1] = p;
                 has_swapped = true;
             }
-            else if (points->items[i].pos.x == points->items[i + 1].pos.x && points->items[i].pos.y < points->items[i + 1].pos.y)
+            else if (points->items[i].pos.x == points->items[i + 1].pos.x && points->items[i].pos.y > points->items[i + 1].pos.y)
             {
                 point_node_t p = points->items[i];
                 points->items[i] = points->items[i + 1];
@@ -226,7 +226,7 @@ point_node_t *clockwise(point_node_t start_node, point_node_t base_node)
  */
 bool is_right_of(point_node_t target, point_node_t p1, point_node_t p2)
 {
-    return cross(target.pos, p1.pos, p2.pos) < 0;
+    return cross(target.pos, p1.pos, p2.pos) > 0;
 }
 
 /**
@@ -239,7 +239,7 @@ bool is_right_of(point_node_t target, point_node_t p1, point_node_t p2)
  */
 bool is_left_of(point_node_t target, point_node_t p1, point_node_t p2)
 {
-    return cross(target.pos, p1.pos, p2.pos) > 0;
+    return cross(target.pos, p1.pos, p2.pos) < 0;
 }
 
 /**
@@ -620,70 +620,74 @@ point_node_list_t generate_delauney_edges(point_list_t points)
 
     point_node_t n1 = {
         .pos = {
-            .x = 300,
-            .y = 100,
+            .x = 400,
+            .y = 300,
         },
     };
 
     point_node_t n2 = {
         .pos = {
-            .x = 100,
-            .y = 500,
+            .x = 600,
+            .y = 700,
         },
     };
 
     point_node_t n3 = {
         .pos = {
-            .x = 500,
-            .y = 1000,
+            .x = 700,
+            .y = 200,
         },
     };
 
     point_node_t n4 = {
         .pos = {
-            .x = 600,
-            .y = 100,
+            .x = 700,
+            .y = 500,
         },
     };
 
     point_node_t n5 = {
         .pos = {
-            .x = 1000,
-            .y = 300,
+            .x = 800,
+            .y = 400,
         },
     };
 
-    point_node_t *n = calloc(5, sizeof(point_node_t));
+    point_node_t n6 = {
+        .pos = {
+            .x = 900,
+            .y = 500,
+        },
+    };
+
+    point_node_t n7 = {
+        .pos = {
+            .x = 900,
+            .y = 700,
+        },
+    };
+
+    point_node_t *n = calloc(7, sizeof(point_node_t));
 
     n[0] = n1;
     n[1] = n2;
     n[2] = n3;
     n[3] = n4;
     n[4] = n5;
+    n[5] = n6;
+    n[6] = n7;
 
     point_node_list_t nodes = {
         .items = n,
-        .count = 5,
+        .count = 7,
         .hull_id = 0,
     };
-
-    double a = cross((Vector2){.x = 700, .y = 600}, (Vector2){500, 500}, (Vector2){1000, 500});
-
-    double b = cross((Vector2){.x = 700, .y = 400}, (Vector2){500, 500}, (Vector2){1000, 500});
 
     hull_counter++;
 
     sort_points(&nodes);
 
-    printf("%f, %f\n", nodes.items[2].pos.x, nodes.items[2].pos.y);
-
     triangulate(&nodes);
-
-    printf("NODE 0: %f, %f | %d\n", nodes.items[0].pos.x, nodes.items[0].pos.y, nodes.items[0].neighbor_count);
-    printf("NODE 1: %f, %f | %d\n", nodes.items[1].pos.x, nodes.items[1].pos.y, nodes.items[0].neighbor_count);
-
-    printf("POINTER TO 1: %p\n", nodes.items[0].neighbors[0]);
-    printf("POINTER TO 0: %p\n", nodes.items[1].neighbors[0]);
 
     return nodes;
 }

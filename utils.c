@@ -8,7 +8,7 @@ bool v_eq_v(Vector2 v1, Vector2 v2)
 
 float angle(Vector2 p1, Vector2 p2)
 {
-    return atan2f(p2.y - p1.y, p2.x - p1.x);
+    return atan2f((SCREEN_HEIGHT - p2.y) - (SCREEN_HEIGHT - p1.y), p2.x - p1.x);
 }
 
 // CONVERSION FUNCTIONS //////////////////////////////////////////////////////////
