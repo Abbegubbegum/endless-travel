@@ -28,10 +28,24 @@ typedef struct
     int count;
 } point_list_t;
 
+typedef struct city_node_t
+{
+    Vector2 pos;
+    city_node_t *neighbors[16];
+    int neighbor_count;
+    bool reached;
+} city_node_t;
+
 typedef struct
 {
-    Vector2 p0;
-    Vector2 p1;
+    city_node_t *items;
+    int count;
+} city_node_list_t;
+
+typedef struct
+{
+    city_node_t *n1;
+    city_node_t *n2;
 } edge_t;
 
 typedef struct

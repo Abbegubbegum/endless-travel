@@ -56,7 +56,7 @@ int find_neighbor_index_with_bigger_angle(point_node_t base, float a)
         }
     }
 
-    return base.neighbor_count - 1;
+    return base.neighbor_count;
 }
 
 /**
@@ -88,7 +88,7 @@ point_node_t *ctr_clockwise(point_node_t start_node, point_node_t base_node)
 }
 
 /**
- * @brief Adds the given node to the base nodes list of neighbors and places it in the right spot, according to the angle relative to the base node
+ * @brief Adds the given node to the base nodes list of neighbors and places it in the right spot, so they are ordered in ctr_clockwise order starting from the left
  *
  * @param node_to_add The node to add
  * @param base_node The node that will receive the other node
@@ -98,14 +98,14 @@ void add_neighbor_to_node(point_node_t *node_to_add, point_node_t *base_node, bo
 {
     float a = angle(base_node->pos, node_to_add->pos);
 
-    int prior_index = find_neighbor_index_with_bigger_angle(*base_node, a);
+    int target_index = find_neighbor_index_with_bigger_angle(*base_node, a);
 
-    for (int i = base_node->neighbor_count; i > prior_index + 1; i--)
+    for (int i = base_node->neighbor_count; i > target_index; i--)
     {
         base_node->neighbors[i] = base_node->neighbors[i - 1];
     }
 
-    base_node->neighbors[prior_index + 1] = node_to_add;
+    base_node->neighbors[target_index] = node_to_add;
     base_node->neighbor_count++;
 
     if (base_node->first == NULL || should_set_first)
@@ -269,7 +269,7 @@ point_node_list_t get_subarray(point_node_list_t origin, int start, int end)
 }
 
 /**
- * @brief Finds the two most lower nodes of both lists, and the two most upper nodes of both lists
+ * @brief Finds the lower and upper tangents of the node_lists
  *
  * @param left_node_list The leftmost node list to search
  * @param right_node_list The rightmost node list to search
@@ -422,8 +422,8 @@ point_node_list_t add_hulls_together(point_node_list_t left, point_node_list_t r
  */
 point_node_list_t merge(point_node_list_t left, point_node_list_t right)
 {
-    point_node_t *lower[2];
-    point_node_t *upper[2];
+    point_node_t *lower[2] = {0};
+    point_node_t *upper[2] = {0};
     get_limit_nodes(left, right, lower, upper);
 
     // The lowest nodes in each list, left and right
@@ -458,7 +458,8 @@ point_node_list_t merge(point_node_list_t left, point_node_list_t right)
         // Get the next node connected to the right node, that is clockwise of the left node,
         first_clockwise_right = clockwise(*left_current, *right_current);
 
-        // If the new node is to the left of the current node pair
+        // If the new node is to the left of the current node pair, i.e its above the current pair
+        // Keep walking clockwise until we find a new node that creates an empty circumcircle with the current pair
         if (is_left_of(*first_clockwise_right, *left_current, *right_current))
         {
             // Gets the next node connected to the right node, that is clockwise of the first clockwise
@@ -477,6 +478,7 @@ point_node_list_t merge(point_node_list_t left, point_node_list_t right)
         else
         {
             // Sets that the left counter clockwise node thing should be the node to be connected to next
+            // Because the new clockwise node was under the current node pair and should therefore not be connected
             a = true;
         }
 
@@ -508,12 +510,12 @@ point_node_list_t merge(point_node_list_t left, point_node_list_t right)
             b = true;
         }
 
-        // If the first clockwise node on the right hull was to the right of the current node pair, connect the left side before the right
+        // If the first clockwise node on the right hull was under the current node pair, connect the left side before the right
         if (a)
         {
             left_current = first_ctr_clockwise_left;
         }
-        // If the first counter clockwise node on the left hull was to the left of the current node pair, connect the right side before the left
+        // If the first counter clockwise node on the left hull was under the current node pair, connect the right side before the left
         else if (b)
         {
             right_current = first_clockwise_right;
@@ -616,74 +618,74 @@ void triangulate(point_node_list_t *points)
 // OBS: REMEMBER TO FREE THE RETURNED ITEMS POINTER
 point_node_list_t generate_delauney_edges(point_list_t points)
 {
-    // point_node_list_t nodes = point_list2node_list(points);
+    point_node_list_t nodes = point_list2node_list(points);
 
-    point_node_t n1 = {
-        .pos = {
-            .x = 400,
-            .y = 300,
-        },
-    };
+    // point_node_t n1 = {
+    //     .pos = {
+    //         .x = 400,
+    //         .y = 300,
+    //     },
+    // };
 
-    point_node_t n2 = {
-        .pos = {
-            .x = 600,
-            .y = 700,
-        },
-    };
+    // point_node_t n2 = {
+    //     .pos = {
+    //         .x = 600,
+    //         .y = 700,
+    //     },
+    // };
 
-    point_node_t n3 = {
-        .pos = {
-            .x = 700,
-            .y = 200,
-        },
-    };
+    // point_node_t n3 = {
+    //     .pos = {
+    //         .x = 700,
+    //         .y = 200,
+    //     },
+    // };
 
-    point_node_t n4 = {
-        .pos = {
-            .x = 700,
-            .y = 500,
-        },
-    };
+    // point_node_t n4 = {
+    //     .pos = {
+    //         .x = 700,
+    //         .y = 500,
+    //     },
+    // };
 
-    point_node_t n5 = {
-        .pos = {
-            .x = 800,
-            .y = 400,
-        },
-    };
+    // point_node_t n5 = {
+    //     .pos = {
+    //         .x = 800,
+    //         .y = 400,
+    //     },
+    // };
 
-    point_node_t n6 = {
-        .pos = {
-            .x = 900,
-            .y = 500,
-        },
-    };
+    // point_node_t n6 = {
+    //     .pos = {
+    //         .x = 900,
+    //         .y = 500,
+    //     },
+    // };
 
-    point_node_t n7 = {
-        .pos = {
-            .x = 900,
-            .y = 700,
-        },
-    };
+    // point_node_t n7 = {
+    //     .pos = {
+    //         .x = 900,
+    //         .y = 700,
+    //     },
+    // };
 
-    point_node_t *n = calloc(7, sizeof(point_node_t));
+    // point_node_t *n = calloc(7, sizeof(point_node_t));
 
-    n[0] = n1;
-    n[1] = n2;
-    n[2] = n3;
-    n[3] = n4;
-    n[4] = n5;
-    n[5] = n6;
-    n[6] = n7;
+    // n[0] = n1;
+    // n[1] = n2;
+    // n[2] = n3;
+    // n[3] = n4;
+    // n[4] = n5;
+    // n[5] = n6;
+    // n[6] = n7;
 
-    point_node_list_t nodes = {
-        .items = n,
-        .count = 7,
-        .hull_id = 0,
-    };
+    // point_node_list_t nodes = {
+    //     .items = n,
+    //     .count = 7,
+    //     .hull_id = 0,
+    // };
 
-    hull_counter++;
+    // hull_counter++;
 
     sort_points(&nodes);
 

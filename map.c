@@ -1,131 +1,15 @@
 #include "common.h"
 
-/*
-
-typedef struct circle_event_t;
-
-typedef struct voronoi_seg_t
-{
-    Vector2 start;
-    Vector2 end;
-    bool done;
-} voronoi_seg_t;
-
-typedef struct voronoi_arc_t
-{
-    Vector2 p;
-    voronoi_arc_t *prev;
-    voronoi_arc_t *next;
-    circle_event_t *event;
-    voronoi_seg_t *s0;
-    voronoi_seg_t *s1;
-} voronoi_arc_t;
-
-typedef struct
-{
-    int x;
-    Vector2 p;
-    voronoi_arc_t *a;
-    bool valid;
-} circle_event_t;
-
-circle_event_t *events[64];
-int events_count = 0;
-
-voronoi_arc_t *root = {0};
-
-// Sort the points array by x in ascending order
-void sort_points(void)
-{
-    bool has_swapped = true;
-
-    // BUBBLE SORT
-    while (has_swapped)
-    {
-        has_swapped = false;
-        for (int i = 0; i < points_count - 1; i++)
-        {
-            if (points[i].x > points[i + 1].x)
-            {
-                Vector2 point = points[i];
-                points[i] = points[i + 1];
-                points[i + 1] = point;
-                has_swapped = true;
-            }
-        }
-    }
-}
-
-// Sorts the event array by x in ascending order
-void sort_events(void)
-{
-    bool has_swapped = true;
-
-    // BUBBLE SORT
-    while (has_swapped)
-    {
-        has_swapped = false;
-        for (int i = 0; i < events_count - 1; i++)
-        {
-            if (events[i]->x > events[i + 1]->x)
-            {
-                circle_event_t *event = events[i];
-                events[i] = events[i + 1];
-                events[i + 1] = event;
-                has_swapped = true;
-            }
-        }
-    }
-}
-
-// Fetches and removes the first point in the array
-Vector2 pop_point_from_array(void)
-{
-    Vector2 p = points[0];
-    points_count--;
-    for (int i = 0; i < points_count; i++)
-    {
-        points[i] = points[i + 1];
-    }
-
-    return p;
-}
-
-void front_insert(Vector2 p)
-{
-    // If this is the first point, allocate a new arc
-    if (!root)
-    {
-        root = calloc(1, sizeof(voronoi_arc_t));
-        root->p = p;
-        return;
-    }
-
-    // Find the current arc at height p.y (if there are any)
-    for (voronoi_arc_t *i = root; i; i = i->next)
-    {
-        Vector2 z, zz;
-    }
-}
-
-void process_point(void)
-{
-    Vector2 point = pop_point_from_array();
-
-    // Add a new arc to the parabolic front(?)
-    front_insert(point);
-}
-
-*/
-
 const int HIGHLIGHT_RADIUS = 50;
 
-Vector2 _points[264];
+city_node_t _nodes[264];
 
-point_list_t points = {
-    .items = _points,
+city_node_list_t nodes = {
+    .items = _nodes,
     .count = 0,
 };
+
+int radius = 150;
 
 edge_t edges[264];
 int edge_count = 0;
@@ -149,6 +33,12 @@ const Color PALETTE[] = {
     MAGENTA,
     MAROON,
     DARKBLUE,
+    GOLD,
+    LIME,
+    DARKGREEN,
+    DARKPURPLE,
+    BEIGE,
+    DARKBROWN,
 };
 
 const int PALETTE_COUNT = sizeof(PALETTE) / sizeof(PALETTE[0]);
@@ -159,9 +49,24 @@ void add_point_to_list(point_list_t *list, Vector2 point)
     list->count++;
 }
 
-void add_edge(edge_t edge)
+void add_node_to_city_node_list(city_node_list_t *list, Vector2 point)
 {
-    edges[edge_count] = edge;
+    list->items[list->count] = (city_node_t){.pos = point};
+    list->count++;
+}
+
+void add_edge(city_node_t *n1, city_node_t *n2)
+{
+    n1->neighbors[n1->neighbor_count] = n2;
+    n2->neighbors[n2->neighbor_count] = n1;
+    n1->neighbor_count++;
+    n2->neighbor_count++;
+
+    edges[edge_count] = (edge_t){
+        .n1 = n1,
+        .n2 = n2,
+    };
+
     edge_count++;
 }
 
@@ -178,8 +83,33 @@ void remove_point_from_list(point_list_t *list, int index)
     list->items[index] = list->items[list->count];
 }
 
+void remove_neighbor(city_node_t *to_remove, city_node_t *base_node)
+{
+    bool found = false;
+
+    for (int i = 0; i < base_node->neighbor_count; i++)
+    {
+        if (found)
+        {
+            base_node->neighbors[i - 1] = base_node->neighbors[i];
+        }
+        else if (base_node->neighbors[i] == to_remove)
+        {
+            found = true;
+        }
+    }
+
+    if (found)
+    {
+        base_node->neighbor_count--;
+    }
+}
+
 void remove_edge(int index)
 {
+    remove_neighbor(edges[index].n1, edges[index].n2);
+    remove_neighbor(edges[index].n2, edges[index].n1);
+
     edge_count--;
     edges[index] = edges[edge_count];
 }
@@ -224,7 +154,7 @@ bool is_point_valid(int nrows, int ncols, Vector2 grid[nrows][ncols], int cellsi
     return true;
 }
 
-void poisson_disk_sampling(int radius, int k, point_list_t *points)
+void poisson_disk_sampling(int radius, int k, city_node_list_t *list)
 {
     int N = 2;
 
@@ -259,7 +189,7 @@ void poisson_disk_sampling(int radius, int k, point_list_t *points)
     }
 
     insert_point_to_grid(grid_cols, grid, cellsize, p0);
-    add_point_to_list(points, p0);
+    add_node_to_city_node_list(&list, p0);
     add_point_to_list(&active, p0);
 
     while (active.count > 0)
@@ -282,7 +212,7 @@ void poisson_disk_sampling(int radius, int k, point_list_t *points)
 
             if (is_point_valid(grid_rows, grid_cols, grid, cellsize, new_p, radius))
             {
-                add_point_to_list(points, new_p);
+                add_node_to_city_node_list(list, new_p);
                 insert_point_to_grid(grid_cols, grid, cellsize, new_p);
                 add_point_to_list(&active, new_p);
                 found = true;
@@ -297,37 +227,24 @@ void poisson_disk_sampling(int radius, int k, point_list_t *points)
     }
 }
 
-Vector2 get_point_on_line(int x, Vector2 p0, float k)
-{
-    float m = p0.y - (k * p0.x);
-
-    return (Vector2){
-        .x = x,
-        .y = k * x + m,
-    };
-}
-
 bool edges_has_shared_neighbors(edge_t e1, edge_t e2)
 {
-    return (v_eq_v(e1.p0, e2.p0) || v_eq_v(e1.p0, e2.p1) || v_eq_v(e1.p1, e2.p0) || v_eq_v(e1.p1, e2.p1));
+    return (e1.n1 == e2.n1 || e1.n1 == e2.n2 || e1.n2 == e2.n1 || e1.n2 == e2.n2);
 }
 
 void lazy_edge_generation()
 {
-    for (int i = 0; i < points.count - 1; i++)
+    for (int i = 0; i < nodes.count - 1; i++)
     {
-        for (int j = i + 1; j < points.count; j++)
+        for (int j = i + 1; j < nodes.count; j++)
         {
             // If they are far away from eachother
-            if (!CheckCollisionPointCircle(points.items[i], points.items[j], 290))
+            if (!CheckCollisionPointCircle(nodes.items[i].pos, nodes.items[j].pos, radius * 2 - 10))
             {
                 continue;
             }
 
-            add_edge((edge_t){
-                .p0 = points.items[i],
-                .p1 = points.items[j],
-            });
+            add_edge(&nodes.items[i], &nodes.items[j]);
         }
     }
 
@@ -338,7 +255,7 @@ void lazy_edge_generation()
         {
             if (!edges_has_shared_neighbors(edges[i], edges[j]))
             {
-                if (CheckCollisionLines(edges[i].p0, edges[i].p1, edges[j].p0, edges[j].p1, NULL))
+                if (CheckCollisionLines(edges[i].n1->pos, edges[i].n2->pos, edges[j].n1->pos, edges[j].n2->pos, NULL))
                 {
 
                     // printf("EDGE 1: %f, %f -> %f, %f\n", edges[i].p0.x, edges[i].p0.y, edges[i].p1.x, edges[i].p1.y);
@@ -357,32 +274,17 @@ void brute_force_voronoi(void)
         for (int x = 0; x < SCREEN_WIDTH; x++)
         {
             int closest = 0;
-            for (int i = 1; i < points.count; i++)
+            for (int i = 1; i < nodes.count; i++)
             {
                 // If point[i] is closer than point[closest] then i is closest
-                if (sqr_dist(points.items[i].x, points.items[i].y, x, y) < sqr_dist(points.items[closest].x, points.items[closest].y, x, y))
+                if (sqr_dist(nodes.items[i].pos.x, nodes.items[i].pos.y, x, y) < sqr_dist(nodes.items[closest].pos.x, nodes.items[closest].pos.y, x, y))
                 {
                     closest = i;
                 }
             }
-            voronoi_pixels[y * SCREEN_HEIGHT + x] = PALETTE[closest % PALETTE_COUNT];
+            voronoi_pixels[y * SCREEN_WIDTH + x] = PALETTE[closest % PALETTE_COUNT];
         }
     }
-}
-
-void generate_map(void)
-{
-    // Generate the points using poisson disk sampling distribution algorithm
-    poisson_disk_sampling(150, 30, &points);
-    lazy_edge_generation();
-
-    brute_force_voronoi();
-
-    // delauney_nodes = generate_delauney_edges(points);
-
-    // Create the delauney triangles from the points
-
-    // Create the voronoi nodes from the delauney triangles
 }
 
 void draw_voronoi(void)
@@ -418,18 +320,55 @@ void draw_map(void)
     }
     else
     {
-        for (int i = 0; i < points.count; i++)
+        for (int i = 0; i < nodes.count; i++)
         {
-            DrawCircleV(points.items[i], 5, BLACK);
+            DrawCircleV(nodes.items[i].pos, 5, BLACK);
+
+            for (int j = 0; j < nodes.items[i].neighbor_count; j++)
+            {
+                DrawLineV(nodes.items[i].pos, nodes.items[i].neighbors[j]->pos, BLACK);
+            }
         }
 
-        for (int i = 0; i < edge_count; i++)
-        {
-            DrawLineV(edges[i].p0, edges[i].p1, BLACK);
+        // for (int i = 0; i < edge_count; i++)
+        // {
+        //     DrawLineV(edges[i].p0, edges[i].p1, BLACK);
 
-            // DrawLineV(get_point_on_line(-10, mid_point, opposite_k), get_point_on_line(SCREEN_WIDTH + 10, mid_point, opposite_k), GREEN);
-        }
+        //     // DrawLineV(get_point_on_line(-10, mid_point, opposite_k), get_point_on_line(SCREEN_WIDTH + 10, mid_point, opposite_k), GREEN);
+        // }
     }
+}
+
+void generate_map(void)
+{
+    nodes.count = 0;
+    edge_count = 0;
+
+    // Generate the points using poisson disk sampling distribution algorithm
+    poisson_disk_sampling(radius, 30, &nodes);
+    lazy_edge_generation();
+
+    Vector2 lowest_pos;
+    int lowest_index = 0;
+
+    for (int i = 1; i < nodes.count; i++)
+    {
+        // CHECK IF ITS MOVING IN RIGHT DIRECTION
+    }
+
+    brute_force_voronoi();
+
+    // BeginDrawing();
+    // ClearBackground(WHITE);
+
+    // draw_map();
+    // EndDrawing();
+
+    // delauney_nodes = generate_delauney_edges(points);
+
+    // Create the delauney triangles from the points
+
+    // Create the voronoi nodes from the delauney triangles
 }
 
 void draw_highlighted_city()
@@ -458,18 +397,18 @@ void draw_highlighted_city()
     }
     else
     {
-        for (int i = 0; i < points.count; i++)
+        for (int i = 0; i < nodes.count; i++)
         {
-            if (dist(mouse_pos, points.items[i]) < closest_distance)
+            if (dist(mouse_pos, nodes.items[i].pos) < closest_distance)
             {
                 closest_city_index = i;
-                closest_distance = dist(mouse_pos, points.items[i]);
+                closest_distance = dist(mouse_pos, nodes.items[i].pos);
             }
         }
 
         if (closest_distance < HIGHLIGHT_RADIUS)
         {
-            DrawCircleV(points.items[closest_city_index], 20, GRAY);
+            DrawCircleV(nodes.items[closest_city_index].pos, 20, GRAY);
         }
     }
 }

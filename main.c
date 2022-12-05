@@ -229,7 +229,10 @@ int main(void)
         case GS_MAP:
         {
             // MAP UPDATE //////////////////////////////////////////////
-
+            if (IsKeyPressed(KEY_SPACE))
+            {
+                generate_map();
+            }
             // MAP DRAW //////////////////////////////////////////////
             BeginDrawing();
             ClearBackground(WHITE);
