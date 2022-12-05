@@ -321,7 +321,9 @@ void draw_map(void)
         {
             Color c = nodes.items[i].reached ? LIGHTGRAY : BLACK;
 
-            DrawCircleV(nodes.items[i].pos, 5, nodes.items[i].visited ? WHITE : c);
+            int radius = nodes.items[i].reached ? 20 : 5;
+
+            DrawCircleV(nodes.items[i].pos, radius, nodes.items[i].visited ? WHITE : c);
         }
 
         // for (int i = 0; i < edge_count; i++)
@@ -443,6 +445,6 @@ void draw_highlighted_city()
 {
     if (highlighted_city != NULL)
     {
-        DrawCircleV(highlighted_city->pos, 20, WHITE);
+        DrawCircleV(highlighted_city->pos, 25, WHITE);
     }
 }
