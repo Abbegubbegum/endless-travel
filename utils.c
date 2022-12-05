@@ -11,6 +11,13 @@ float angle(Vector2 p1, Vector2 p2)
     return atan2f((SCREEN_HEIGHT - p2.y) - (SCREEN_HEIGHT - p1.y), p2.x - p1.x);
 }
 
+int sqr_dist(int x1, int y1, int x2, int y2)
+{
+    int dx = x1 - x2;
+    int dy = y1 - y2;
+    return dx * dx + dy * dy;
+}
+
 // CONVERSION FUNCTIONS //////////////////////////////////////////////////////////
 int city_coord2index(int x, int y)
 {

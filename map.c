@@ -131,6 +131,27 @@ edge_t edges[264];
 int edge_count = 0;
 
 point_node_list_t delauney_nodes = {0};
+bool delauney = false;
+
+Color voronoi_pixels[SCREEN_HEIGHT * SCREEN_WIDTH] = {0};
+
+const Color PALETTE[] = {
+    RED,
+    GREEN,
+    BLUE,
+    YELLOW,
+    PURPLE,
+    ORANGE,
+    SKYBLUE,
+    VIOLET,
+    BROWN,
+    PINK,
+    MAGENTA,
+    MAROON,
+    DARKBLUE,
+};
+
+const int PALETTE_COUNT = sizeof(PALETTE) / sizeof(PALETTE[0]);
 
 void add_point_to_list(point_list_t *list, Vector2 point)
 {
@@ -320,11 +341,31 @@ void lazy_edge_generation()
                 if (CheckCollisionLines(edges[i].p0, edges[i].p1, edges[j].p0, edges[j].p1, NULL))
                 {
 
-                    printf("EDGE 1: %f, %f -> %f, %f\n", edges[i].p0.x, edges[i].p0.y, edges[i].p1.x, edges[i].p1.y);
-                    printf("EDGE 2: %f, %f -> %f, %f\n", edges[j].p0.x, edges[j].p0.y, edges[j].p1.x, edges[j].p1.y);
+                    // printf("EDGE 1: %f, %f -> %f, %f\n", edges[i].p0.x, edges[i].p0.y, edges[i].p1.x, edges[i].p1.y);
+                    // printf("EDGE 2: %f, %f -> %f, %f\n", edges[j].p0.x, edges[j].p0.y, edges[j].p1.x, edges[j].p1.y);
                     remove_edge(rand() % 2 == 0 ? i : j);
                 }
             }
+        }
+    }
+}
+
+void brute_force_voronoi(void)
+{
+    for (int y = 0; y < SCREEN_HEIGHT; y++)
+    {
+        for (int x = 0; x < SCREEN_WIDTH; x++)
+        {
+            int closest = 0;
+            for (int i = 1; i < points.count; i++)
+            {
+                // If point[i] is closer than point[closest] then i is closest
+                if (sqr_dist(points.items[i].x, points.items[i].y, x, y) < sqr_dist(points.items[closest].x, points.items[closest].y, x, y))
+                {
+                    closest = i;
+                }
+            }
+            voronoi_pixels[y * SCREEN_HEIGHT + x] = PALETTE[closest % PALETTE_COUNT];
         }
     }
 }
@@ -333,40 +374,60 @@ void generate_map(void)
 {
     // Generate the points using poisson disk sampling distribution algorithm
     poisson_disk_sampling(150, 30, &points);
-    // lazy_edge_generation();
+    lazy_edge_generation();
 
-    delauney_nodes = generate_delauney_edges(points);
+    brute_force_voronoi();
+
+    // delauney_nodes = generate_delauney_edges(points);
 
     // Create the delauney triangles from the points
 
     // Create the voronoi nodes from the delauney triangles
 }
 
-// Draws the voronoi map
+void draw_voronoi(void)
+{
+    for (int y = 0; y < SCREEN_HEIGHT; y++)
+    {
+        for (int x = 0; x < SCREEN_WIDTH; x++)
+        {
+            DrawPixel(x, y, voronoi_pixels[y * SCREEN_WIDTH + x]);
+        }
+    }
+}
+
+// Draws the map
 void draw_map(void)
 {
-    for (int i = 0; i < points.count; i++)
+    draw_voronoi();
+
+    if (delauney)
     {
-        // DrawCircleV(points.items[i], 5, BLACK);
-    }
-
-    for (int i = 0; i < edge_count; i++)
-    {
-        // DrawLineV(edges[i].p0, edges[i].p1, BLACK);
-
-        // DrawLineV(get_point_on_line(-10, mid_point, opposite_k), get_point_on_line(SCREEN_WIDTH + 10, mid_point, opposite_k), GREEN);
-    }
-
-    for (int i = 0; i < delauney_nodes.count; i++)
-    {
-        point_node_t node = delauney_nodes.items[i];
-
-        DrawCircleV(node.pos, 5, BLACK);
-
-        for (int j = 0; j < node.neighbor_count; j++)
+        for (int i = 0; i < delauney_nodes.count; i++)
         {
-            point_node_t neighbor = *node.neighbors[j];
-            DrawLineV(node.pos, neighbor.pos, BLACK);
+            point_node_t node = delauney_nodes.items[i];
+
+            DrawCircleV(node.pos, 5, BLACK);
+
+            for (int j = 0; j < node.neighbor_count; j++)
+            {
+                point_node_t neighbor = *node.neighbors[j];
+                DrawLineV(node.pos, neighbor.pos, BLACK);
+            }
+        }
+    }
+    else
+    {
+        for (int i = 0; i < points.count; i++)
+        {
+            DrawCircleV(points.items[i], 5, BLACK);
+        }
+
+        for (int i = 0; i < edge_count; i++)
+        {
+            DrawLineV(edges[i].p0, edges[i].p1, BLACK);
+
+            // DrawLineV(get_point_on_line(-10, mid_point, opposite_k), get_point_on_line(SCREEN_WIDTH + 10, mid_point, opposite_k), GREEN);
         }
     }
 }
@@ -379,17 +440,36 @@ void draw_highlighted_city()
 
     float closest_distance = SCREEN_HEIGHT * SCREEN_WIDTH;
 
-    for (int i = 0; i < delauney_nodes.count; i++)
+    if (delauney)
     {
-        if (dist(mouse_pos, delauney_nodes.items[i].pos) < closest_distance)
+        for (int i = 0; i < delauney_nodes.count; i++)
         {
-            closest_city_index = i;
-            closest_distance = dist(mouse_pos, delauney_nodes.items[i].pos);
+            if (dist(mouse_pos, delauney_nodes.items[i].pos) < closest_distance)
+            {
+                closest_city_index = i;
+                closest_distance = dist(mouse_pos, delauney_nodes.items[i].pos);
+            }
+        }
+
+        if (closest_distance < HIGHLIGHT_RADIUS)
+        {
+            DrawCircleV(delauney_nodes.items[closest_city_index].pos, 20, GRAY);
         }
     }
-
-    if (closest_distance < HIGHLIGHT_RADIUS)
+    else
     {
-        DrawCircleV(delauney_nodes.items[closest_city_index].pos, 20, GRAY);
+        for (int i = 0; i < points.count; i++)
+        {
+            if (dist(mouse_pos, points.items[i]) < closest_distance)
+            {
+                closest_city_index = i;
+                closest_distance = dist(mouse_pos, points.items[i]);
+            }
+        }
+
+        if (closest_distance < HIGHLIGHT_RADIUS)
+        {
+            DrawCircleV(points.items[closest_city_index], 20, GRAY);
+        }
     }
 }
