@@ -312,14 +312,14 @@ void draw_map(void)
     }
     else
     {
+        for (int i = 0; i < edge_count; i++)
+        {
+            DrawLineV(edges[i].n1->pos, edges[i].n2->pos, BLACK);
+        }
+
         for (int i = 0; i < nodes.count; i++)
         {
             Color c = nodes.items[i].reached ? LIGHTGRAY : BLACK;
-
-            for (int j = 0; j < nodes.items[i].neighbor_count; j++)
-            {
-                DrawLineV(nodes.items[i].pos, nodes.items[i].neighbors[j]->pos, BLACK);
-            }
 
             DrawCircleV(nodes.items[i].pos, 5, nodes.items[i].visited ? WHITE : c);
         }
