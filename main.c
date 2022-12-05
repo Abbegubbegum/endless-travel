@@ -1,8 +1,9 @@
 #include "common.h"
 #include "geometry.c"
 #include "delauney.c"
-#include "map.c"
 #include "wfc.c"
+#include "map.c"
+#include "player.c"
 
 // TILE FUNCTIONS //////////////////////////////////////////////////////////
 void init_tileset(void)
@@ -233,6 +234,15 @@ int main(void)
             {
                 generate_map();
             }
+
+            update_highlighted_city();
+
+            if (IsMouseButtonPressed(0) && highlighted_city != NULL)
+            {
+                select_highlighted_city();
+                reset_player();
+            }
+
             // MAP DRAW //////////////////////////////////////////////
             BeginDrawing();
             ClearBackground(WHITE);
@@ -252,11 +262,13 @@ int main(void)
                 generate_new_city();
             }
 
+            update_player();
+
             // CITY DRAW //////////////////////////////////////////////
             BeginDrawing();
             ClearBackground(BEIGE);
-            DrawFPS(0, 0);
             draw_tiles();
+            draw_player();
             EndDrawing();
         }
         break;

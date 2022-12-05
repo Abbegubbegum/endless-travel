@@ -1,6 +1,7 @@
 #include "common.h"
 
-const int HIGHLIGHT_RADIUS = 50;
+const int HIGHLIGHT_RADIUS = 75;
+const int EDGE_BUFFER = 25;
 
 city_node_t _nodes[264];
 
@@ -114,17 +115,9 @@ void remove_edge(int index)
     edges[index] = edges[edge_count];
 }
 
-float dist(Vector2 p0, Vector2 p1)
-{
-    float x = p0.x - p1.x;
-    float y = p0.y - p1.y;
-
-    return sqrt(x * x + y * y);
-}
-
 bool is_point_valid(int nrows, int ncols, Vector2 grid[nrows][ncols], int cellsize, Vector2 p, int r)
 {
-    if (p.x < 0 || p.x >= SCREEN_WIDTH || p.y < 0 || p.y >= SCREEN_HEIGHT)
+    if (p.x < EDGE_BUFFER || p.x >= SCREEN_WIDTH - EDGE_BUFFER || p.y < EDGE_BUFFER || p.y >= SCREEN_HEIGHT - EDGE_BUFFER)
     {
         return false;
     }
@@ -173,8 +166,8 @@ void poisson_disk_sampling(int radius, int k, city_node_list_t *list)
     };
 
     Vector2 p0 = (Vector2){
-        .x = rand() % SCREEN_WIDTH,
-        .y = rand() % SCREEN_HEIGHT,
+        .x = rand() % (SCREEN_WIDTH - EDGE_BUFFER * 2) + EDGE_BUFFER,
+        .y = rand() % (SCREEN_HEIGHT - EDGE_BUFFER * 2) + EDGE_BUFFER,
     };
 
     for (int y = 0; y < grid_rows; y++)
@@ -189,7 +182,7 @@ void poisson_disk_sampling(int radius, int k, city_node_list_t *list)
     }
 
     insert_point_to_grid(grid_cols, grid, cellsize, p0);
-    add_node_to_city_node_list(&list, p0);
+    add_node_to_city_node_list(list, p0);
     add_point_to_list(&active, p0);
 
     while (active.count > 0)
@@ -309,25 +302,26 @@ void draw_map(void)
         {
             point_node_t node = delauney_nodes.items[i];
 
-            DrawCircleV(node.pos, 5, BLACK);
-
             for (int j = 0; j < node.neighbor_count; j++)
             {
                 point_node_t neighbor = *node.neighbors[j];
                 DrawLineV(node.pos, neighbor.pos, BLACK);
             }
+            DrawCircleV(node.pos, 5, BLACK);
         }
     }
     else
     {
         for (int i = 0; i < nodes.count; i++)
         {
-            DrawCircleV(nodes.items[i].pos, 5, BLACK);
+            Color c = nodes.items[i].reached ? LIGHTGRAY : BLACK;
 
             for (int j = 0; j < nodes.items[i].neighbor_count; j++)
             {
                 DrawLineV(nodes.items[i].pos, nodes.items[i].neighbors[j]->pos, BLACK);
             }
+
+            DrawCircleV(nodes.items[i].pos, 5, nodes.items[i].visited ? WHITE : c);
         }
 
         // for (int i = 0; i < edge_count; i++)
@@ -348,13 +342,20 @@ void generate_map(void)
     poisson_disk_sampling(radius, 30, &nodes);
     lazy_edge_generation();
 
-    Vector2 lowest_pos;
     int lowest_index = 0;
+    int lowest_sqr_dist = sqr_dist(0, SCREEN_HEIGHT, nodes.items[0].pos.x, nodes.items[0].pos.y);
 
     for (int i = 1; i < nodes.count; i++)
     {
-        // CHECK IF ITS MOVING IN RIGHT DIRECTION
+        int dist = sqr_dist(nodes.items[i].pos.x, nodes.items[i].pos.y, 0, SCREEN_HEIGHT);
+        if (dist < lowest_sqr_dist)
+        {
+            lowest_index = i;
+            lowest_sqr_dist = dist;
+        }
     }
+
+    nodes.items[lowest_index].reached = true;
 
     brute_force_voronoi();
 
@@ -371,7 +372,7 @@ void generate_map(void)
     // Create the voronoi nodes from the delauney triangles
 }
 
-void draw_highlighted_city()
+void update_highlighted_city(void)
 {
     Vector2 mouse_pos = GetMousePosition();
 
@@ -383,32 +384,65 @@ void draw_highlighted_city()
     {
         for (int i = 0; i < delauney_nodes.count; i++)
         {
-            if (dist(mouse_pos, delauney_nodes.items[i].pos) < closest_distance)
+            float current_dist = dist(mouse_pos, delauney_nodes.items[i].pos);
+
+            if (current_dist < closest_distance)
             {
                 closest_city_index = i;
-                closest_distance = dist(mouse_pos, delauney_nodes.items[i].pos);
+                closest_distance = current_dist;
             }
         }
 
         if (closest_distance < HIGHLIGHT_RADIUS)
         {
-            DrawCircleV(delauney_nodes.items[closest_city_index].pos, 20, GRAY);
         }
     }
     else
     {
         for (int i = 0; i < nodes.count; i++)
         {
-            if (dist(mouse_pos, nodes.items[i].pos) < closest_distance)
+            float current_dist = dist(mouse_pos, nodes.items[i].pos);
+
+            if (dist(mouse_pos, nodes.items[i].pos) < closest_distance && nodes.items[i].reached && !nodes.items[i].visited)
             {
                 closest_city_index = i;
-                closest_distance = dist(mouse_pos, nodes.items[i].pos);
+                closest_distance = current_dist;
             }
         }
 
         if (closest_distance < HIGHLIGHT_RADIUS)
         {
-            DrawCircleV(nodes.items[closest_city_index].pos, 20, GRAY);
+            highlighted_city = &nodes.items[closest_city_index];
         }
+        else
+        {
+            highlighted_city = NULL;
+        }
+    }
+}
+
+void select_highlighted_city()
+{
+    highlighted_city->visited = true;
+
+    for (int i = 0; i < highlighted_city->neighbor_count; i++)
+    {
+        highlighted_city->neighbors[i]->reached = true;
+    }
+
+    gamestate = GS_CITY;
+    generate_new_city();
+}
+
+void return_to_map()
+{
+    gamestate = GS_MAP;
+}
+
+void draw_highlighted_city()
+{
+    if (highlighted_city != NULL)
+    {
+        DrawCircleV(highlighted_city->pos, 20, WHITE);
     }
 }

@@ -18,6 +18,14 @@ int sqr_dist(int x1, int y1, int x2, int y2)
     return dx * dx + dy * dy;
 }
 
+float dist(Vector2 p0, Vector2 p1)
+{
+    float x = p0.x - p1.x;
+    float y = p0.y - p1.y;
+
+    return sqrt(x * x + y * y);
+}
+
 // CONVERSION FUNCTIONS //////////////////////////////////////////////////////////
 int city_coord2index(int x, int y)
 {

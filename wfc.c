@@ -232,8 +232,8 @@ void place_next_connected_tile(void)
         return;
     }
 
-    printf("%d | %0.f, %0.f\n", entropy_to_collapse.count, lowest_entropy_pos.x, lowest_entropy_pos.y);
-    printf("road percent: %d%% \n", road_percent);
+    // printf("%d | %0.f, %0.f\n", entropy_to_collapse.count, lowest_entropy_pos.x, lowest_entropy_pos.y);
+    // printf("road percent: %d%% \n", road_percent);
 
     if (entropy_to_collapse.house_count == 0)
     {
@@ -260,7 +260,7 @@ void place_next_connected_tile(void)
 
 void generate_new_city()
 {
-    clock_t start = clock();
+    // clock_t start = clock();
     city_is_generated = false;
     road_percent = ROAD_PERCENT_BASE;
     house_count = 0;
@@ -270,7 +270,7 @@ void generate_new_city()
         city_tiles[i] = (city_tile_t){0};
     }
 
-    city_tiles[city_coord2index(city_start_pos.x, city_start_pos.y)] = (city_tile_t){
+    city_tiles[city_coord2index(city_start_pos_coord.x, city_start_pos_coord.y)] = (city_tile_t){
         .tile = &road_tileset.tiles[0],
         .tile_type = C_TTYPE_ROAD,
         .special_tile = C_STYPE_START,
@@ -287,15 +287,15 @@ void generate_new_city()
         return;
     }
 
-    frontier_data_t exit = find_farthest_away_tile(city_start_pos.x, city_start_pos.y);
+    frontier_data_t exit = find_farthest_away_tile(city_start_pos_coord.x, city_start_pos_coord.y);
 
-    printf("%d | %d\n", exit.path_length, exit.index);
+    // printf("%d | %d\n", exit.path_length, exit.index);
 
     city_tiles[exit.index].special_tile = C_STYPE_EXIT;
 
-    clock_t end = clock();
+    // clock_t end = clock();
 
-    printf("TIME: %f\n", ((double)end - start) / CLOCKS_PER_SEC);
+    // printf("TIME: %f\n", ((double)end - start) / CLOCKS_PER_SEC);
 }
 
 /* DEPRECATED

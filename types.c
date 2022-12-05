@@ -31,9 +31,10 @@ typedef struct
 typedef struct city_node_t
 {
     Vector2 pos;
-    city_node_t *neighbors[16];
+    struct city_node_t *neighbors[16];
     int neighbor_count;
     bool reached;
+    bool visited;
 } city_node_t;
 
 typedef struct

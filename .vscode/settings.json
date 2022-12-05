@@ -2,6 +2,10 @@
 	"files.associations": {
 		"__config": "c",
 		"algorithm": "c",
-		"type_traits": "c"
+		"type_traits": "c",
+		"bitset": "c",
+		"cstdio": "c",
+		"string": "c",
+		"string_view": "c"
 	}
 }

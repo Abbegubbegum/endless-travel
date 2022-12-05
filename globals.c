@@ -13,7 +13,9 @@ const int CITY_SIZE = CITY_COLS * CITY_ROWS;
 
 city_tile_t city_tiles[CITY_SIZE] = {0};
 
+Vector2 city_start_pos_coord = (Vector2){.x = (int)CITY_COLS / 2, .y = (int)CITY_ROWS / 2};
+
 wfc_tileset_t road_tileset = {0};
 wfc_tileset_t house_tileset = {0};
 
-Vector2 city_start_pos = (Vector2){.x = (int)CITY_COLS / 2, .y = (int)CITY_ROWS / 2};
+city_node_t *highlighted_city = NULL;
