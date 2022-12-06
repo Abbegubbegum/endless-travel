@@ -35,6 +35,7 @@ typedef enum
 {
     H_STYPE_NONE,
     H_STYPE_DOOR,
+    H_STYPE_CHEST,
 } house_special_tile_e;
 
 typedef struct

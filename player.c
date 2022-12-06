@@ -83,7 +83,7 @@ void update_player_house(void)
         next_coord.x++;
     }
 
-    if (house_tiles[house_coord2index(next_coord.x, next_coord.y)].tile_type != H_TTYPE_WALL)
+    if (house_tiles[house_coord2index(next_coord.x, next_coord.y)].tile_type != H_TTYPE_WALL && house_tiles[house_coord2index(next_coord.x, next_coord.y)].tile_type != H_TTYPE_OBJECT)
     {
         player.coord = next_coord;
     }

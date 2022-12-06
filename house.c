@@ -86,6 +86,29 @@ void generate_house(wfc_tile_t *tile)
             }
         }
     }
+
+    int chest_count = 0;
+
+    for (int y = 1; y < HOUSE_ROWS - 1; y++)
+    {
+        for (int x = 1; x < HOUSE_COLS - 1; x++)
+        {
+            if (house_tiles[house_coord2index(x, y)].tile_type != H_TTYPE_WALL)
+            {
+                if (rand() % 50 == 0)
+                {
+                    house_tiles[house_coord2index(x, y)].tile_type = H_TTYPE_OBJECT;
+                    house_tiles[house_coord2index(x, y)].special_tile = H_STYPE_CHEST;
+                    chest_count++;
+                }
+            }
+
+            if (chest_count == 3)
+            {
+                break;
+            }
+        }
+    }
 }
 
 void draw_house()
@@ -102,6 +125,11 @@ void draw_house()
             if (special_type == H_STYPE_DOOR)
             {
                 c = BROWN;
+            }
+
+            if (special_type == H_STYPE_CHEST)
+            {
+                c = GOLD;
             }
 
             DrawRectangleV(house_coord2screen(x, y), (Vector2){HOUSE_TILE_SIZE, HOUSE_TILE_SIZE}, c);
