@@ -17,31 +17,74 @@ void generate_house(wfc_tile_t *tile)
         }
     }
 
+    int doorx = 0;
+    int doory = 0;
+
     if (tile->side_rules.top || tile->side_rules.bottom)
     {
-        int x = (rand() % (HOUSE_COLS - 2)) + 1;
-        int y = tile->side_rules.top ? 0 : HOUSE_ROWS - 1;
+        doorx = (rand() % (HOUSE_COLS - 2)) + 1;
+        doory = tile->side_rules.top ? 0 : HOUSE_ROWS - 1;
 
-        house_tiles[house_coord2index(x, y)].special_tile = H_STYPE_DOOR;
-        house_tiles[house_coord2index(x, y)].tile_type = H_TTYPE_FLOOR;
+        house_tiles[house_coord2index(doorx, doory)].special_tile = H_STYPE_DOOR;
+        house_tiles[house_coord2index(doorx, doory)].tile_type = H_TTYPE_FLOOR;
 
         house_player_start_pos = (Vector2){
-            .x = x,
-            .y = tile->side_rules.top ? y + 1 : y - 1,
+            .x = doorx,
+            .y = tile->side_rules.top ? doory + 1 : doory - 1,
         };
     }
     else if (tile->side_rules.left || tile->side_rules.right)
     {
-        int y = (rand() % (HOUSE_ROWS - 2)) + 1;
-        int x = tile->side_rules.left ? 0 : HOUSE_COLS - 1;
+        doory = (rand() % (HOUSE_ROWS - 2)) + 1;
+        doorx = tile->side_rules.left ? 0 : HOUSE_COLS - 1;
 
-        house_tiles[house_coord2index(x, y)].special_tile = H_STYPE_DOOR;
-        house_tiles[house_coord2index(x, y)].tile_type = H_TTYPE_FLOOR;
+        house_tiles[house_coord2index(doorx, doory)].special_tile = H_STYPE_DOOR;
+        house_tiles[house_coord2index(doorx, doory)].tile_type = H_TTYPE_FLOOR;
 
         house_player_start_pos = (Vector2){
-            .x = tile->side_rules.left ? x + 1 : x - 1,
-            .y = y,
+            .x = tile->side_rules.left ? doorx + 1 : doorx - 1,
+            .y = doory,
         };
+    }
+
+    int split_dir = rand() % 2;
+
+    if (split_dir == 0)
+    {
+        int x = house_player_start_pos.x;
+        while (house_player_start_pos.x == x)
+        {
+            x = (rand() % (HOUSE_COLS - 4) + 2);
+        }
+
+        int openingy = rand() % (HOUSE_ROWS - 2) + 1;
+
+        for (int y = 0; y < HOUSE_ROWS; y++)
+        {
+            if (y != openingy)
+            {
+                house_tiles[house_coord2index(x, y)].tile_type = H_TTYPE_WALL;
+            }
+        }
+    }
+
+    if (split_dir == 1)
+    {
+        int y = house_player_start_pos.y;
+        while (house_player_start_pos.y == y)
+        {
+            y = (rand() % (HOUSE_ROWS - 4) + 2);
+        }
+
+        int openingx = rand() % (HOUSE_COLS - 2) + 1;
+
+        for (int x = 0; x < HOUSE_COLS; x++)
+        {
+            if (x != openingx)
+            {
+                house_tiles[house_coord2index(x, y)].tile_type = H_TTYPE_WALL;
+            }
+        }
     }
 }
 
