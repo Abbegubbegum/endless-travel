@@ -27,3 +27,5 @@ house_tile_t house_tiles[HOUSE_SIZE] = {0};
 
 const int HOUSE_X_EDGE_OFFSET = (SCREEN_WIDTH - (HOUSE_TILE_SIZE * HOUSE_COLS)) / 2;
 const int HOUSE_Y_EDGE_OFFSET = (SCREEN_HEIGHT - (HOUSE_TILE_SIZE * HOUSE_ROWS)) / 2;
+
+Vector2 house_player_start_pos = {0};
