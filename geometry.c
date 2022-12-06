@@ -7,6 +7,12 @@ typedef struct
     float c;
 } bisect_t;
 
+typedef struct
+{
+    Vector2 pos;
+    float rsquared;
+} circle_t;
+
 Vector2 line_intersection(bisect_t b1, bisect_t b2)
 {
     float denom = b1.b * b2.a - b1.a * b2.b;

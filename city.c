@@ -15,6 +15,9 @@ typedef struct
     int path_length;
 } frontier_data_t;
 
+wfc_tileset_t road_tileset = {0};
+wfc_tileset_t house_tileset = {0};
+
 bool city_is_generated = false;
 
 const int ROAD_PERCENT_BASE = 50;

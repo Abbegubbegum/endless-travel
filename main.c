@@ -1,8 +1,9 @@
 #include "common.h"
 #include "geometry.c"
 #include "delauney.c"
-#include "wfc.c"
+#include "city.c"
 #include "map.c"
+#include "house.c"
 #include "player.c"
 
 // TILE FUNCTIONS //////////////////////////////////////////////////////////
@@ -269,6 +270,17 @@ int main(void)
             ClearBackground(BEIGE);
             draw_tiles();
             draw_player();
+            EndDrawing();
+        }
+        break;
+        case GS_HOUSE:
+        {
+            // HOUSE UPDATE //////////////////////////////////////////////
+
+            // HOUSE DRAW //////////////////////////////////////////
+            BeginDrawing();
+            ClearBackground(BLACK);
+            draw_house();
             EndDrawing();
         }
         break;

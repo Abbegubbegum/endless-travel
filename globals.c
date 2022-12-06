@@ -15,7 +15,15 @@ city_tile_t city_tiles[CITY_SIZE] = {0};
 
 Vector2 city_start_pos_coord = (Vector2){.x = (int)CITY_COLS / 2, .y = (int)CITY_ROWS / 2};
 
-wfc_tileset_t road_tileset = {0};
-wfc_tileset_t house_tileset = {0};
-
 city_node_t *highlighted_city = NULL;
+
+const int HOUSE_TILE_SIZE = 64;
+
+const int HOUSE_COLS = 16;
+const int HOUSE_ROWS = 16;
+const int HOUSE_SIZE = HOUSE_COLS * HOUSE_ROWS;
+
+house_tile_t house_tiles[HOUSE_SIZE] = {0};
+
+const int HOUSE_X_EDGE_OFFSET = (SCREEN_WIDTH - (HOUSE_TILE_SIZE * HOUSE_COLS)) / 2;
+const int HOUSE_Y_EDGE_OFFSET = (SCREEN_HEIGHT - (HOUSE_TILE_SIZE * HOUSE_ROWS)) / 2;

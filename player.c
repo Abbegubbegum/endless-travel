@@ -18,6 +18,12 @@ void update_player(void)
 {
     city_tile_t current_tile = city_tiles[city_coord2index(player.coord.x, player.coord.y)];
 
+    if (current_tile.tile_type == C_TTYPE_HOUSE)
+    {
+        generate_house();
+        gamestate = GS_HOUSE;
+    }
+
     if (IsKeyPressed(KEY_W) && current_tile.tile->side_rules.top)
     {
         player.coord.y--;

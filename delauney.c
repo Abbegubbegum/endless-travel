@@ -1,5 +1,21 @@
 #include "common.h"
 
+typedef struct point_node_t
+{
+    Vector2 pos;
+    struct point_node_t *neighbors[16];
+    struct point_node_t *first;
+    int neighbor_count;
+    int hull_id;
+} point_node_t;
+
+typedef struct
+{
+    point_node_t *items;
+    int count;
+    int hull_id;
+} point_node_list_t;
+
 int hull_counter = 0;
 
 // OBS: REMEMBER TO FREE THE NODE LIST ITEMS POINTER

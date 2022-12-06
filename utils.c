@@ -47,6 +47,27 @@ Vector2 city_coord2screen(int x, int y)
     };
 }
 
+int house_coord2index(int x, int y)
+{
+    return y * HOUSE_COLS + x;
+}
+
+Vector2 house_index2coord(int i)
+{
+    return (Vector2){
+        .x = i % HOUSE_COLS,
+        .y = i / HOUSE_COLS,
+    };
+}
+
+Vector2 house_coord2screen(int x, int y)
+{
+    return (Vector2){
+        .x = HOUSE_X_EDGE_OFFSET + x * HOUSE_TILE_SIZE,
+        .y = HOUSE_Y_EDGE_OFFSET + y * HOUSE_TILE_SIZE,
+    };
+}
+
 // MAP PLACEMENT FUNCTIONS ///////////////////////////////////////////////////////////////////////////
 
 bool city_tile_is_placable(wfc_tile_t tile, int x, int y)

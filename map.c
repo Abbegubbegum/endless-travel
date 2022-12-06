@@ -1,11 +1,17 @@
 #include "common.h"
 
+typedef struct
+{
+    city_node_t *n1;
+    city_node_t *n2;
+} edge_t;
+
 const int HIGHLIGHT_RADIUS = 75;
 const int EDGE_BUFFER = 25;
 
 city_node_t _nodes[264];
 
-city_node_list_t nodes = {
+city_node_list_t city_nodes = {
     .items = _nodes,
     .count = 0,
 };
@@ -227,17 +233,17 @@ bool edges_has_shared_neighbors(edge_t e1, edge_t e2)
 
 void lazy_edge_generation()
 {
-    for (int i = 0; i < nodes.count - 1; i++)
+    for (int i = 0; i < city_nodes.count - 1; i++)
     {
-        for (int j = i + 1; j < nodes.count; j++)
+        for (int j = i + 1; j < city_nodes.count; j++)
         {
             // If they are far away from eachother
-            if (!CheckCollisionPointCircle(nodes.items[i].pos, nodes.items[j].pos, radius * 2 - 10))
+            if (!CheckCollisionPointCircle(city_nodes.items[i].pos, city_nodes.items[j].pos, radius * 2 - 10))
             {
                 continue;
             }
 
-            add_edge(&nodes.items[i], &nodes.items[j]);
+            add_edge(&city_nodes.items[i], &city_nodes.items[j]);
         }
     }
 
@@ -267,10 +273,10 @@ void brute_force_voronoi(void)
         for (int x = 0; x < SCREEN_WIDTH; x++)
         {
             int closest = 0;
-            for (int i = 1; i < nodes.count; i++)
+            for (int i = 1; i < city_nodes.count; i++)
             {
                 // If point[i] is closer than point[closest] then i is closest
-                if (sqr_dist(nodes.items[i].pos.x, nodes.items[i].pos.y, x, y) < sqr_dist(nodes.items[closest].pos.x, nodes.items[closest].pos.y, x, y))
+                if (sqr_dist(city_nodes.items[i].pos.x, city_nodes.items[i].pos.y, x, y) < sqr_dist(city_nodes.items[closest].pos.x, city_nodes.items[closest].pos.y, x, y))
                 {
                     closest = i;
                 }
@@ -317,13 +323,13 @@ void draw_map(void)
             DrawLineV(edges[i].n1->pos, edges[i].n2->pos, BLACK);
         }
 
-        for (int i = 0; i < nodes.count; i++)
+        for (int i = 0; i < city_nodes.count; i++)
         {
-            Color c = nodes.items[i].reached ? LIGHTGRAY : BLACK;
+            Color c = city_nodes.items[i].reached ? LIGHTGRAY : BLACK;
 
-            int radius = nodes.items[i].reached ? 20 : 5;
+            int radius = city_nodes.items[i].reached ? 20 : 5;
 
-            DrawCircleV(nodes.items[i].pos, radius, nodes.items[i].visited ? WHITE : c);
+            DrawCircleV(city_nodes.items[i].pos, radius, city_nodes.items[i].visited ? WHITE : c);
         }
 
         // for (int i = 0; i < edge_count; i++)
@@ -337,19 +343,19 @@ void draw_map(void)
 
 void generate_map(void)
 {
-    nodes.count = 0;
+    city_nodes.count = 0;
     edge_count = 0;
 
     // Generate the points using poisson disk sampling distribution algorithm
-    poisson_disk_sampling(radius, 30, &nodes);
+    poisson_disk_sampling(radius, 30, &city_nodes);
     lazy_edge_generation();
 
     int lowest_index = 0;
-    int lowest_sqr_dist = sqr_dist(0, SCREEN_HEIGHT, nodes.items[0].pos.x, nodes.items[0].pos.y);
+    int lowest_sqr_dist = sqr_dist(0, SCREEN_HEIGHT, city_nodes.items[0].pos.x, city_nodes.items[0].pos.y);
 
-    for (int i = 1; i < nodes.count; i++)
+    for (int i = 1; i < city_nodes.count; i++)
     {
-        int dist = sqr_dist(nodes.items[i].pos.x, nodes.items[i].pos.y, 0, SCREEN_HEIGHT);
+        int dist = sqr_dist(city_nodes.items[i].pos.x, city_nodes.items[i].pos.y, 0, SCREEN_HEIGHT);
         if (dist < lowest_sqr_dist)
         {
             lowest_index = i;
@@ -357,7 +363,7 @@ void generate_map(void)
         }
     }
 
-    nodes.items[lowest_index].reached = true;
+    city_nodes.items[lowest_index].reached = true;
 
     brute_force_voronoi();
 
@@ -401,11 +407,11 @@ void update_highlighted_city(void)
     }
     else
     {
-        for (int i = 0; i < nodes.count; i++)
+        for (int i = 0; i < city_nodes.count; i++)
         {
-            float current_dist = dist(mouse_pos, nodes.items[i].pos);
+            float current_dist = dist(mouse_pos, city_nodes.items[i].pos);
 
-            if (dist(mouse_pos, nodes.items[i].pos) < closest_distance && nodes.items[i].reached && !nodes.items[i].visited)
+            if (dist(mouse_pos, city_nodes.items[i].pos) < closest_distance && city_nodes.items[i].reached && !city_nodes.items[i].visited)
             {
                 closest_city_index = i;
                 closest_distance = current_dist;
@@ -414,7 +420,7 @@ void update_highlighted_city(void)
 
         if (closest_distance < HIGHLIGHT_RADIUS)
         {
-            highlighted_city = &nodes.items[closest_city_index];
+            highlighted_city = &city_nodes.items[closest_city_index];
         }
         else
         {

@@ -2,6 +2,14 @@
 
 typedef enum
 {
+    GS_NONE,
+    GS_MAP,
+    GS_CITY,
+    GS_HOUSE,
+} gamestate_e;
+
+typedef enum
+{
     C_TTYPE_NONE,
     C_TTYPE_ROAD,
     C_TTYPE_HOUSE,
@@ -17,10 +25,17 @@ typedef enum
 
 typedef enum
 {
-    GS_NONE,
-    GS_MAP,
-    GS_CITY,
-} gamestate_e;
+    H_TTYPE_NONE,
+    H_TTYPE_FLOOR,
+    H_TTYPE_WALL,
+    H_TTYPE_OBJECT,
+} house_tile_type_e;
+
+typedef enum
+{
+    H_STYPE_NONE,
+    H_STYPE_DOOR,
+} house_special_tile_e;
 
 typedef struct
 {
@@ -42,34 +57,6 @@ typedef struct
     city_node_t *items;
     int count;
 } city_node_list_t;
-
-typedef struct
-{
-    city_node_t *n1;
-    city_node_t *n2;
-} edge_t;
-
-typedef struct
-{
-    Vector2 pos;
-    float rsquared;
-} circle_t;
-
-typedef struct point_node_t
-{
-    Vector2 pos;
-    struct point_node_t *neighbors[16];
-    struct point_node_t *first;
-    int neighbor_count;
-    int hull_id;
-} point_node_t;
-
-typedef struct
-{
-    point_node_t *items;
-    int count;
-    int hull_id;
-} point_node_list_t;
 
 typedef struct
 {
@@ -97,3 +84,9 @@ typedef struct
     city_tile_type_e tile_type;
     city_special_tile_e special_tile;
 } city_tile_t;
+
+typedef struct
+{
+    house_tile_type_e tile_type;
+    house_special_tile_e special_tile;
+} house_tile_t;
