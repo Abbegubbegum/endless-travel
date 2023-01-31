@@ -8,6 +8,12 @@ typedef enum
     GS_HOUSE,
 } gamestate_e;
 
+typedef struct
+{
+    Vector2 coord;
+    int food;
+} player_t;
+
 typedef enum
 {
     C_TTYPE_NONE,

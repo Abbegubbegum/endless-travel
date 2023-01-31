@@ -135,4 +135,6 @@ void draw_house()
             DrawRectangleV(house_coord2screen(x, y), (Vector2){HOUSE_TILE_SIZE, HOUSE_TILE_SIZE}, c);
         }
     }
+
+    DrawText(TextFormat("Food: %d", player.food), SCREEN_WIDTH - 250, 20, 64, WHITE);
 }

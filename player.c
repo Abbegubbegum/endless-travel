@@ -1,12 +1,5 @@
 #include "common.h"
 
-typedef struct
-{
-    Vector2 coord;
-} player_t;
-
-player_t player;
-
 Vector2 old_city_coord = {0};
 
 const int PLAYER_EDGE_OFFSET = 10;
@@ -83,8 +76,23 @@ void update_player_house(void)
         next_coord.x++;
     }
 
-    if (house_tiles[house_coord2index(next_coord.x, next_coord.y)].tile_type != H_TTYPE_WALL && house_tiles[house_coord2index(next_coord.x, next_coord.y)].tile_type != H_TTYPE_OBJECT)
-    {
+    house_tile_t *next_tile = &house_tiles[house_coord2index(next_coord.x, next_coord.y)];
+
+    bool block_player_movement = false;
+
+    if (next_tile->tile_type == H_TTYPE_WALL) {
+        block_player_movement = true;
+    }
+
+    if (next_tile->tile_type == H_TTYPE_OBJECT) {
+        if (next_tile->special_tile == H_STYPE_CHEST) {
+            player.food++;
+            next_tile->tile_type = H_TTYPE_FLOOR;
+            next_tile->special_tile = H_STYPE_NONE;
+        }
+    }
+
+    if (!block_player_movement) {
         player.coord = next_coord;
     }
 }
@@ -103,7 +111,7 @@ void draw_player(void)
     {
         if (city_tiles[city_coord2index(player.coord.x, player.coord.y)].tile_type == C_TTYPE_HOUSE)
         {
-            DrawText("Press Enter to Enter into House!", 20, 20, 64, WHITE);
+            DrawText("Press Enter to go in!", 20, 20, 42, WHITE);
         }
     }
 }

@@ -5,6 +5,10 @@ const int SCREEN_HEIGHT = 1280;
 
 gamestate_e gamestate = GS_MAP;
 
+player_t player = { 
+    .food = 3,
+};
+
 const int CITY_TILE_SIZE = 64;
 
 const int CITY_COLS = SCREEN_HEIGHT / CITY_TILE_SIZE;

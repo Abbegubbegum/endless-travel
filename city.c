@@ -334,4 +334,6 @@ void draw_city(void)
             }
         }
     }
+
+    DrawText(TextFormat("Food: %d", player.food), SCREEN_WIDTH - 250, 20, 64, WHITE);
 }

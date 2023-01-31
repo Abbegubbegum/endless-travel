@@ -203,8 +203,9 @@ int main(void)
 
             update_highlighted_city();
 
-            if (IsMouseButtonPressed(0) && highlighted_city != NULL)
+            if (IsMouseButtonPressed(0) && highlighted_city != NULL && player.food > 0)
             {
+                player.food--;
                 select_highlighted_city();
                 reset_player();
             }

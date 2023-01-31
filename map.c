@@ -7,7 +7,7 @@ typedef struct
 } edge_t;
 
 const int HIGHLIGHT_RADIUS = 75;
-const int EDGE_BUFFER = 25;
+const int EDGE_BUFFER = 75;
 
 city_node_t _nodes[264];
 
@@ -339,6 +339,8 @@ void draw_map(void)
         //     // DrawLineV(get_point_on_line(-10, mid_point, opposite_k), get_point_on_line(SCREEN_WIDTH + 10, mid_point, opposite_k), GREEN);
         // }
     }
+
+    DrawText(TextFormat("Food: %d", player.food), SCREEN_WIDTH - 250, 20, 64, WHITE);
 }
 
 void generate_map(void)
