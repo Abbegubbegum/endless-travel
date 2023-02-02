@@ -271,6 +271,7 @@ void generate_new_city()
     for (int i = 0; i < CITY_SIZE; i++)
     {
         city_tiles[i] = (city_tile_t){0};
+        city_tile_is_visited[i] = false;
     }
 
     city_tiles[city_coord2index(city_start_pos_coord.x, city_start_pos_coord.y)] = (city_tile_t){

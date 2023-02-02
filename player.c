@@ -13,8 +13,9 @@ void update_player_city(void)
 {
     city_tile_t current_tile = city_tiles[city_coord2index(player.coord.x, player.coord.y)];
 
-    if (IsKeyPressed(KEY_ENTER) && current_tile.tile_type == C_TTYPE_HOUSE)
+    if (IsKeyPressed(KEY_ENTER) && current_tile.tile_type == C_TTYPE_HOUSE && !city_tile_is_visited[city_coord2index(player.coord.x, player.coord.y)])
     {
+        city_tile_is_visited[city_coord2index(player.coord.x, player.coord.y)] = true;
         generate_house(current_tile.tile);
         gamestate = GS_HOUSE;
         old_city_coord = player.coord;
@@ -111,7 +112,7 @@ void draw_player(void)
     {
         if (city_tiles[city_coord2index(player.coord.x, player.coord.y)].tile_type == C_TTYPE_HOUSE)
         {
-            DrawText("Press Enter to go in!", 20, 20, 42, WHITE);
+            DrawText(city_tile_is_visited[city_coord2index(player.coord.x, player.coord.y)] ? "Already Visited!" : "Press Enter to go in!", 20, 20, 42, WHITE);
         }
     }
 }
